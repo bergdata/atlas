@@ -1,0 +1,54 @@
+[
+  {
+    "id": "156b387c-f004-21a6-b4b5-3a185fdec7cf",
+    "name": "Bamboo Crew"
+  },
+  {
+    "id": "729e8c7d-4e54-5e79-b865-3a16a300dc1d",
+    "name": "Dummy Entity Team"
+  },
+  {
+    "id": "38678466-dd6a-0b53-980f-3a111b0ac1bc",
+    "name": "Zen"
+  },
+  {
+    "id": "478eae39-d71e-4912-a27b-648b65e29ee3",
+    "name": "Sync catalog job team"
+  },
+  {
+    "id": "10d6d276-b348-6d43-31ea-3a0daa32822f",
+    "name": "Families"
+  },
+  {
+    "id": "8468c1e4-46ca-d96d-26a4-3a0daa32822f",
+    "name": "Africa"
+  },
+  {
+    "id": "acdb77c8-a720-476a-ae74-3a0daa32822f",
+    "name": "Europe"
+  },
+  {
+    "id": "25c350e3-dafb-8741-b8c2-3a0daa32822f",
+    "name": "North America"
+  },
+  {
+    "id": "5f44a7bc-28d0-037e-3776-3a0daa32822f",
+    "name": "South East Asia"
+  },
+  {
+    "id": "34ba1f4d-7cfd-9656-464b-3a0daa32822f",
+    "name": "Asia"
+  },
+  {
+    "id": "e69370db-7caf-0fb5-ed57-3a0b6526379b",
+    "name": "Main Team"
+  },
+  {
+    "id": "4419c8bb-9f24-000d-fe0c-3a0b64d0c5d8",
+    "name": "Operations Team"
+  },
+  {
+    "id": "de03f92a-4303-0d70-d1c9-3a0b6526379b",
+    "name": "Support Team"
+  }
+]

@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block title %}CRM Labels{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">CRM Labels</h3>
+                    <p class="card-subtitle">Available CRM labels with their properties</p>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover" id="crmLabelsTable">
+                            <thead>
+                                <tr>
+                                    <th>Active</th>
+                                    <th>Name</th>
+                                    <th>Slug</th>
+                                    <th>ID</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for label in labels %}
+                                <tr>
+                                    <td>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox"
+                                                   id="active_{{ label.id }}"
+                                                   {% if label.get('active', True) %}checked{% endif %}
+                                                   onchange="updateLabelStatus('{{ label.id }}', this.checked)">
+                                            <label class="form-check-label" for="active_{{ label.id }}"></label>
+                                        </div>
+                                    </td>
+                                    <td>{{ label.name }}</td>
+                                    <td>{{ label.slug }}</td>
+                                    <td><code>{{ label.id }}</code></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {% if not labels %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        No CRM labels found. Make sure the CRM data is available in output/crm_labels.json
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+code {
+    background-color: #f8f9fa;
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-family: 'Courier New', monospace;
+}
+</style>
+
+<script>
+function updateLabelStatus(labelId, isActive) {
+    fetch('/crm-labels/update-status', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            id: labelId,
+            active: isActive
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast(isActive ? 'Label activated' : 'Label deactivated', 'success');
+        } else {
+            showToast('Error updating label status', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('Error updating label status', 'error');
+    });
+}
+
+function showToast(message, type) {
+    // Simple toast notification
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type === 'success' ? 'success' : 'danger'} position-fixed`;
+    toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    toast.innerHTML = `
+        <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'} me-2"></i>
+        ${message}
+        <button type="button" class="btn-close float-end" onclick="this.parentElement.remove()"></button>
+    `;
+
+    document.body.appendChild(toast);
+
+    // Auto remove after 3 seconds
+    setTimeout(() => {
+        if (toast.parentElement) {
+            toast.remove();
+        }
+    }, 3000);
+}
+</script>
+{% endblock %}

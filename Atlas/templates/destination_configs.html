@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+
+{% block title %}Destination Configs - Atlas Config{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-cogs me-2"></i>Destination Configurations</h2>
+        <div>
+            <button class="btn btn-primary me-2" onclick="exportConfigs()">
+                <i class="fas fa-download me-2"></i>Export Configs
+            </button>
+            <button class="btn btn-success" onclick="generateConfigFile()">
+                <i class="fas fa-file-code me-2"></i>Generate config.py
+            </button>
+        </div>
+    </div>
+
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i>
+        View the automatically generated destination configurations. These configs are created from your destination groups and can be used directly in your automation scripts.
+    </div>
+
+    {% for config_name, config in configs.items() %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">{{ config_name|title }}</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <h6><i class="fas fa-list me-2"></i>Destination IDs</h6>
+                    <div class="mb-3">
+                        {% for dest_id in config.destination_ids %}
+                        <span class="badge bg-primary me-1 mb-1">{{ dest_id }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <h6><i class="fas fa-users me-2"></i>Users</h6>
+                    <div class="mb-3">
+                        {% for username, user in config.users.items() %}
+                        <div class="mb-2">
+                            <strong>{{ user.name }}</strong><br>
+                            <small class="text-muted">{{ user.email }}</small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <h6><i class="fas fa-user-check me-2"></i>Settings</h6>
+                    <div class="mb-3">
+                        <strong>Base User:</strong> {{ config.users[config.base_user].name if config.base_user in config.users else 'N/A' }}<br>
+                        <strong>Assigned Users:</strong> {{ config.assigned_users|length }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-3">
+                <h6><i class="fas fa-code me-2"></i>Python Configuration</h6>
+                <pre class="bg-light p-3 rounded"><code>{{ config_name }}: {
+    "destination_ids": {{ config.destination_ids }},
+    "users": {
+        {% for username, user in config.users.items() %}
+        "{{ username }}": {
+            "name": "{{ user.name }}",
+            "id": "{{ user.id }}",
+            "email": "{{ user.email }}"
+        }{% if not loop.last %},{% endif %}
+        {% endfor %}
+    },
+    "base_user": "{{ config.base_user }}",
+    "assigned_users": {{ config.assigned_users }}
+}</code></pre>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+
+    {% if not configs %}
+    <div class="text-center py-5">
+        <i class="fas fa-cogs fa-3x text-muted mb-3"></i>
+        <h4 class="text-muted">No Destination Configurations Yet</h4>
+        <p class="text-muted">Create destination groups first to generate configurations automatically.</p>
+        <a href="{{ url_for('destination_groups') }}" class="btn btn-primary">
+            <i class="fas fa-layer-group me-2"></i>Go to Destination Groups
+        </a>
+    </div>
+    {% endif %}
+
+    <div class="alert alert-success mt-4">
+        <i class="fas fa-lightbulb me-2"></i>
+        <strong>Tip:</strong> Use the "Generate config.py" button to create a Python file that you can import into your automation scripts.
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function exportConfigs() {
+    fetch('/api/destination-configs')
+    .then(response => response.json())
+    .then(configs => {
+        const dataStr = JSON.stringify(configs, null, 2);
+        const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+
+        const exportFileDefaultName = 'destination_configs.json';
+
+        const linkElement = document.createElement('a');
+        linkElement.setAttribute('href', dataUri);
+        linkElement.setAttribute('download', exportFileDefaultName);
+        linkElement.click();
+
+        showToast('Destination configs exported successfully!', 'success');
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('Error exporting configs', 'error');
+    });
+}
+
+function generateConfigFile() {
+    fetch('/api/destination-configs')
+    .then(response => response.json())
+    .then(configs => {
+        let pythonCode = `# Destination-specific employee assignments
+DESTINATION_CONFIGS = {
+`;
+
+        Object.entries(configs).forEach(([configName, config], index) => {
+            pythonCode += `    "${configName}": {
+        "destination_ids": ${JSON.stringify(config.destination_ids)},
+        "users": {
+`;
+
+            Object.entries(config.users).forEach(([username, user], userIndex) => {
+                pythonCode += `            "${username}": {
+                "name": "${user.name}",
+                "id": "${user.id}",
+                "email": "${user.email}"
+            }${userIndex < Object.keys(config.users).length - 1 ? ',' : ''}\n`;
+            });
+
+            pythonCode += `        },
+        "base_user": "${config.base_user}",
+        "assigned_users": ${JSON.stringify(config.assigned_users)}
+    }${index < Object.keys(configs).length - 1 ? ',' : ''}\n`;
+        });
+
+        pythonCode += `}\n\n# Helper functions\ndef get_destination_config(destination_name):\n    """Get configuration for a specific destination"""\n    return DESTINATION_CONFIGS.get(destination_name.lower())\n\ndef get_destination_by_ids(destination_ids):\n    """Find destination configuration by destination IDs"""\n    for dest_name, config in DESTINATION_CONFIGS.items():\n        if set(destination_ids) == set(config["destination_ids"]):\n            return dest_name, config\n    return None, None`;
+
+        const dataUri = 'data:text/plain;charset=utf-8,'+ encodeURIComponent(pythonCode);
+
+        const linkElement = document.createElement('a');
+        linkElement.setAttribute('href', dataUri);
+        linkElement.setAttribute('download', 'destination_config.py');
+        linkElement.click();
+
+        showToast('Python config file generated successfully!', 'success');
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('Error generating config file', 'error');
+    });
+}
+
+function showToast(message, type) {
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type === 'success' ? 'success' : 'danger'} position-fixed`;
+    toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    toast.innerHTML = `
+        <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'} me-2"></i>
+        ${message}
+        <button type="button" class="btn-close float-end" onclick="this.parentElement.remove()"></button>
+    `;
+
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+        if (toast.parentElement) {
+            toast.remove();
+        }
+    }, 3000);
+}
+</script>
+{% endblock %}
