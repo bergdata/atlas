@@ -1,0 +1,106 @@
+history:
+- timestamp: '2025-08-30T12:19:53.418936'
+  user: demo_user
+  automation_id: '1'
+  action: created
+  automation_name: Hotel Booking Confirmations
+  old_hash: 21e6aa23
+  new_hash: b7126e53
+  version: 1
+- timestamp: '2025-08-30T12:19:53.434169'
+  user: demo_user
+  automation_id: '1'
+  action: updated
+  automation_name: Travel Plan Ready Notifications
+  old_hash: b7126e53
+  new_hash: 3c569a68
+  version: 2
+- timestamp: '2025-08-30T12:20:39.994260'
+  user: demo_user
+  automation_id: '2'
+  action: created
+  automation_name: Hotel Booking Confirmations
+  old_hash: 3c569a68
+  new_hash: b15a3020
+  version: 1
+- timestamp: '2025-08-30T12:20:40.009224'
+  user: demo_user
+  automation_id: '1'
+  action: updated
+  automation_name: Travel Plan Ready Notifications
+  old_hash: b15a3020
+  new_hash: ca67efcd
+  version: 3
+- timestamp: '2025-08-30T12:26:31.452586'
+  user: debug_test
+  automation_id: '1'
+  action: updated
+  automation_name: Test Automation
+  old_hash: ca67efcd
+  new_hash: e57df048
+  version: 4
+- timestamp: '2025-08-30T12:28:06.674858'
+  user: test_update
+  automation_id: '1'
+  action: updated
+  automation_name: Test Automation
+  old_hash: e57df048
+  new_hash: e5edb93c
+  version: 4
+- timestamp: '2025-08-30T12:28:54.118732'
+  user: migration_system
+  automation_id: '1'
+  action: updated
+  automation_name: Je reisplan xyz is klaar
+  old_hash: e5edb93c
+  new_hash: 5dbc98a6
+  version: 5
+- timestamp: '2025-08-30T12:28:54.144503'
+  user: migration_system
+  automation_id: '2'
+  action: updated
+  automation_name: ''
+  old_hash: 5dbc98a6
+  new_hash: 76a1c049
+  version: 2
+- timestamp: '2025-08-30T12:28:54.168642'
+  user: migration_system
+  automation_id: '3'
+  action: created
+  automation_name: ''
+  old_hash: 76a1c049
+  new_hash: 2f916901
+  version: 1
+- timestamp: '2025-08-30T12:28:54.196262'
+  user: migration_system
+  automation_id: '4'
+  action: created
+  automation_name: ''
+  old_hash: 2f916901
+  new_hash: 06b95bd6
+  version: 1
+- timestamp: '2025-08-30T12:28:54.230507'
+  user: migration_system
+  automation_id: '5'
+  action: created
+  automation_name: ''
+  old_hash: 06b95bd6
+  new_hash: 5687a9ee
+  version: 1
+- timestamp: '2025-08-30T12:28:54.254814'
+  user: migration_system
+  automation_id: '6'
+  action: created
+  automation_name: ''
+  old_hash: 5687a9ee
+  new_hash: e4a974d2
+  version: 1
+- timestamp: '2025-08-30T12:30:54.742752'
+  user: test_user
+  automation_id: '7'
+  action: created
+  automation_name: Test Migration Automation
+  old_hash: e4a974d2
+  new_hash: 0d7d59c6
+  version: 1
+last_backup: '2025-08-30T12:30:54.767377'

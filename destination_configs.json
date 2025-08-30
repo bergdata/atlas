@@ -1,0 +1,25 @@
+{
+  "vietnam": {
+    "destination_ids": [
+      "93",
+      "111"
+    ],
+    "users": {
+      "charona.van.ingen@riksjatravel.nl": {
+        "name": "charona.van.ingen@riksjatravel.nl",
+        "id": "5e246d96-0dc0-f08a-c874-3a1120e0d81f",
+        "email": "charona.van.ingen@riksjatravel.nl"
+      },
+      "anne_karlijn.bol@riksjatravel.nl": {
+        "name": "anne-karlijn.bol@riksjatravel.nl",
+        "id": "ef64fbec-29b0-43e4-9cd0-7c6ad903934c",
+        "email": "anne-karlijn.bol@riksjatravel.nl"
+      }
+    },
+    "base_user": "charona.van.ingen@riksjatravel.nl",
+    "assigned_users": [
+      "charona.van.ingen@riksjatravel.nl",
+      "anne-karlijn.bol@riksjatravel.nl"
+    ]
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "1": {
+    "id": "1",
+    "name": "Travel Plan Ready Notifications",
+    "crm_label_id": "hotel-booking-label",
+    "applicable_destinations": [
+      "93",
+      "111"
+    ],
+    "enabled": true,
+    "assignment_logic": "base_user",
+    "rule1_type": "contains",
+    "rule1_value": "je reisplan naar",
+    "rule2_type": "contains",
+    "rule2_value": "is volledig klaar"
+  },
+  "2": {
+    "id": "2",
+    "name": "Hotel Booking Confirmations",
+    "crm_label_id": "hotel-booking-label",
+    "applicable_destinations": [
+      "93",
+      "111"
+    ],
+    "enabled": true,
+    "assignment_logic": "distribution",
+    "rule1_type": "contains",
+    "rule1_value": "hotel booking confirmed",
+    "rule2_type": "contains",
+    "rule2_value": "reference number"
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "1": {
+    "name": "Je reisplan xyz is klaar",
+    "crm_label_id": "",
+    "applicable_destinations": [],
+    "enabled": true
+  },
+  "2": {
+    "name": "",
+    "crm_label_id": "",
+    "applicable_destinations": [],
+    "enabled": false
+  },
+  "3": {
+    "name": "",
+    "crm_label_id": "",
+    "applicable_destinations": [],
+    "enabled": false
+  },
+  "4": {
+    "name": "",
+    "crm_label_id": "",
+    "applicable_destinations": [],
+    "enabled": false
+  },
+  "5": {
+    "name": "",
+    "crm_label_id": "",
+    "applicable_destinations": [],
+    "enabled": false
+  },
+  "6": {
+    "name": "",
+    "crm_label_id": "",
+    "applicable_destinations": [],
+    "enabled": false
+  }
+}
