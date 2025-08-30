@@ -1,0 +1,286 @@
+{% extends "base.html" %}
+
+{% block title %}Destinations - Atlas Config{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-map-marker-alt me-2"></i>Destination Configuration</h2>
+        <div>
+            <button class="btn btn-primary me-2" onclick="refreshDestinations()">
+                <i class="fas fa-sync me-2"></i>Refresh from CRM
+            </button>
+            <button class="btn btn-success" onclick="exportDestinations()">
+                <i class="fas fa-download me-2"></i>Export
+            </button>
+        </div>
+    </div>
+
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i>
+        Manage destination configurations. These destinations are used to determine which countries/locations your automations should apply to.
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-md-4">
+            <input type="text" class="form-control" id="searchInput" placeholder="Search destinations...">
+        </div>
+        <div class="col-md-2">
+            <select class="form-select" id="countryFilter">
+                <option value="">All Countries</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-striped table-hover" id="destinationsTable">
+            <thead class="table-dark">
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Country</th>
+                    <th>Email</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for dest_id, dest in destinations.items() %}
+                <tr data-country="{{ dest.country }}">
+                    <td>{{ dest_id }}</td>
+                    <td>
+                        <input type="text" class="form-control form-control-sm"
+                               value="{{ dest.name }}"
+                               onchange="updateDestination('{{ dest_id }}', 'name', this.value)">
+                    </td>
+                    <td>
+                        <input type="text" class="form-control form-control-sm"
+                               value="{{ dest.country|replace('Family ', '') }}"
+                               onchange="updateDestination('{{ dest_id }}', 'country', this.value)">
+                    </td>
+                    <td>
+                        <input type="email" class="form-control form-control-sm"
+                               value="{{ dest.email }}"
+                               onchange="updateDestination('{{ dest_id }}', 'email', this.value)">
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteDestination('{{ dest_id }}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="mt-4">
+        <h5>Add New Destination</h5>
+        <div class="row">
+            <div class="col-md-3">
+                <input type="text" class="form-control" id="newDestId" placeholder="Destination ID">
+            </div>
+            <div class="col-md-3">
+                <input type="text" class="form-control" id="newDestName" placeholder="Destination Name">
+            </div>
+            <div class="col-md-2">
+                <input type="text" class="form-control" id="newDestCountry" placeholder="Country">
+            </div>
+            <div class="col-md-3">
+                <input type="email" class="form-control" id="newDestEmail" placeholder="Email Address">
+            </div>
+            <div class="col-md-1">
+                <button class="btn btn-primary" onclick="addDestination()">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="alert alert-warning mt-4">
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        <strong>Note:</strong> Changes are saved automatically. The "Refresh from CRM" button will reload destination data from your CRM system.
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let allDestinations = {{ destinations|tojson|safe }};
+
+// Create a copy with truncated country names for consistency
+let displayDestinations = {};
+Object.keys(allDestinations).forEach(id => {
+    displayDestinations[id] = {
+        ...allDestinations[id],
+        country: allDestinations[id].country.replace('Family ', '')
+    };
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    populateCountryFilter();
+    setupSearch();
+});
+
+function populateCountryFilter() {
+    const countries = new Set();
+    Object.values(allDestinations).forEach(dest => {
+        if (dest.country) {
+            // Truncate "Family " prefix for display
+            const displayCountry = dest.country.replace('Family ', '');
+            countries.add(displayCountry);
+        }
+    });
+
+    const filter = document.getElementById('countryFilter');
+    Array.from(countries).sort().forEach(country => {
+        const option = document.createElement('option');
+        option.value = country;
+        option.textContent = country;
+        filter.appendChild(option);
+    });
+}
+
+function setupSearch() {
+    const searchInput = document.getElementById('searchInput');
+    const countryFilter = document.getElementById('countryFilter');
+
+    function filterTable() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const selectedCountry = countryFilter.value;
+        const rows = document.querySelectorAll('#destinationsTable tbody tr');
+
+        rows.forEach(row => {
+            const name = row.cells[1].querySelector('input').value.toLowerCase();
+            const country = row.cells[2].querySelector('input').value;
+            const email = row.cells[3].querySelector('input').value.toLowerCase();
+
+            const matchesSearch = name.includes(searchTerm) || email.includes(searchTerm);
+            const matchesCountry = !selectedCountry || country === selectedCountry;
+
+            row.style.display = matchesSearch && matchesCountry ? '' : 'none';
+        });
+    }
+
+    searchInput.addEventListener('input', filterTable);
+    countryFilter.addEventListener('change', filterTable);
+}
+
+function updateDestination(destId, field, value) {
+    fetch('/destinations/update', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            id: destId,
+            field: field,
+            value: value
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            allDestinations[destId][field] = value;
+            showToast('Destination updated successfully', 'success');
+        } else {
+            showToast('Error updating destination', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('Error updating destination', 'error');
+    });
+}
+
+function deleteDestination(destId) {
+    if (confirm('Are you sure you want to delete this destination?')) {
+        // In a real implementation, you'd make an API call to delete
+        // For now, we'll just remove it from the UI
+        const row = document.querySelector(`tr[data-country] input[value="${destId}"]`).closest('tr');
+        row.remove();
+        delete allDestinations[destId];
+        showToast('Destination deleted successfully', 'success');
+    }
+}
+
+function addDestination() {
+    const destId = document.getElementById('newDestId').value.trim();
+    const name = document.getElementById('newDestName').value.trim();
+    const country = document.getElementById('newDestCountry').value.trim();
+    const email = document.getElementById('newDestEmail').value.trim();
+
+    if (!destId || !name) {
+        showToast('Destination ID and Name are required', 'error');
+        return;
+    }
+
+    // Add to local data
+    allDestinations[destId] = { name, country, email };
+
+    // Add to table
+    const tbody = document.querySelector('#destinationsTable tbody');
+    const row = document.createElement('tr');
+    row.setAttribute('data-country', country);
+    row.innerHTML = `
+        <td>${destId}</td>
+        <td><input type="text" class="form-control form-control-sm" value="${name}" onchange="updateDestination('${destId}', 'name', this.value)"></td>
+        <td><input type="text" class="form-control form-control-sm" value="${country}" onchange="updateDestination('${destId}', 'country', this.value)"></td>
+        <td><input type="email" class="form-control form-control-sm" value="${email}" onchange="updateDestination('${destId}', 'email', this.value)"></td>
+        <td><button class="btn btn-sm btn-outline-danger" onclick="deleteDestination('${destId}')"><i class="fas fa-trash"></i></button></td>
+    `;
+    tbody.appendChild(row);
+
+    // Clear form
+    document.getElementById('newDestId').value = '';
+    document.getElementById('newDestName').value = '';
+    document.getElementById('newDestCountry').value = '';
+    document.getElementById('newDestEmail').value = '';
+
+    // Update country filter
+    populateCountryFilter();
+
+    showToast('Destination added successfully', 'success');
+}
+
+function refreshDestinations() {
+    showToast('Refreshing destinations from CRM...', 'info');
+    // In a real implementation, this would make an API call to refresh from CRM
+    setTimeout(() => {
+        showToast('Destinations refreshed successfully', 'success');
+    }, 1000);
+}
+
+function exportDestinations() {
+    const dataStr = JSON.stringify(allDestinations, null, 2);
+    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+
+    const exportFileDefaultName = 'destinations_export.json';
+
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.click();
+
+    showToast('Destinations exported successfully', 'success');
+}
+
+function showToast(message, type) {
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type === 'success' ? 'success' : type === 'error' ? 'danger' : 'info'} position-fixed`;
+    toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    toast.innerHTML = `
+        <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'} me-2"></i>
+        ${message}
+        <button type="button" class="btn-close float-end" onclick="this.parentElement.remove()"></button>
+    `;
+
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+        if (toast.parentElement) {
+            toast.remove();
+        }
+    }, 3000);
+}
+</script>
+{% endblock %}

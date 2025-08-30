@@ -1,0 +1,189 @@
+metadata:
+  version: 1.0.0
+  created_at: '2025-08-30T12:18:47.697739'
+  last_modified: '2025-08-30T14:01:06.648615'
+  total_automations: 11
+automations:
+  '1':
+    id: '1'
+    created_at: '2025-08-30T12:34:25.061330'
+    created_by: frontend
+    last_modified: '2025-08-30T14:01:04.761092'
+    last_modified_by: frontend_bulk_save
+    version: 9
+    usage_count: 0
+    last_used: null
+    name: Je reisplan is klaar
+    crm_label_id: c919667d-2ecc-b3c5-aeca-3a0dc5054e8f
+    applicable_destinations: []
+    enabled: true
+    assignment_logic: base_user
+    rule1_type: contains
+    rule1_value: je reisplan naar
+    rule2_type: contains
+    rule2_value: is klaar
+    rule3_type: ends_with
+    rule3_value: '!'
+  '2':
+    id: '2'
+    created_at: '2025-08-30T12:34:33.673055'
+    created_by: frontend_bulk_save
+    last_modified: '2025-08-30T14:01:05.089034'
+    last_modified_by: frontend_bulk_save
+    version: 8
+    usage_count: 0
+    last_used: null
+    name: Boekingsbevestiging
+    crm_label_id: ec18838b-ee41-8a7f-67f8-3a0dc5057e8d
+    enabled: true
+    applicable_destinations: []
+    assignment_logic: base_user
+    rule1_type: contains
+    rule1_value: Boekingsbevestiging reis Riksja
+  '3':
+    id: '3'
+    created_at: '2025-08-30T12:34:33.685938'
+    created_by: frontend_bulk_save
+    last_modified: '2025-08-30T14:01:05.555017'
+    last_modified_by: frontend_bulk_save
+    version: 8
+    usage_count: 0
+    last_used: null
+    name: Mailverwerker travel hotels
+    crm_label_id: a47c3905-ec7e-5546-affb-3a0f7a57bda9
+    enabled: true
+    applicable_destinations:
+    - '1'
+    assignment_logic: base_user
+    rule1_type: contains
+    rule1_value: hotel
+    rule2_type: contains
+    rule2_value: booking
+  '4':
+    id: '4'
+    created_at: '2025-08-30T13:53:39.048803'
+    created_by: frontend_create
+    last_modified: '2025-08-30T14:01:05.969573'
+    last_modified_by: frontend_bulk_save
+    version: 3
+    usage_count: 0
+    last_used: null
+    name: ''
+    crm_label_id: ''
+    enabled: false
+    applicable_destinations: []
+    assignment_logic: base_user
+    rule1_type: starts_with
+    rule1_value: ''
+  '5':
+    id: '5'
+    created_at: '2025-08-30T13:53:43.583527'
+    created_by: frontend_create
+    last_modified: '2025-08-30T13:56:45.298186'
+    last_modified_by: frontend_bulk_save
+    version: 2
+    usage_count: 0
+    last_used: null
+    name: ''
+    crm_label_id: ''
+    enabled: false
+    applicable_destinations: []
+    assignment_logic: base_user
+    rule1_type: starts_with
+    rule1_value: ''
+  '6':
+    id: '6'
+    created_at: '2025-08-30T13:53:47.407984'
+    created_by: frontend_create
+    last_modified: '2025-08-30T13:56:45.447371'
+    last_modified_by: frontend_bulk_save
+    version: 2
+    usage_count: 0
+    last_used: null
+    name: ''
+    crm_label_id: ''
+    enabled: false
+    applicable_destinations: []
+    assignment_logic: base_user
+    rule1_type: starts_with
+    rule1_value: ''
+  '7':
+    id: '7'
+    created_at: '2025-08-30T13:54:05.378578'
+    created_by: frontend_create
+    last_modified: '2025-08-30T13:56:45.620572'
+    last_modified_by: frontend_bulk_save
+    version: 2
+    usage_count: 0
+    last_used: null
+    name: ''
+    crm_label_id: ''
+    enabled: false
+    applicable_destinations: []
+    assignment_logic: base_user
+    rule1_type: starts_with
+    rule1_value: ''
+  '8':
+    id: '8'
+    created_at: '2025-08-30T13:55:00.139346'
+    created_by: frontend_create
+    last_modified: '2025-08-30T13:55:00.139346'
+    last_modified_by: frontend_create
+    version: 1
+    usage_count: 0
+    last_used: null
+    name: ''
+    crm_label_id: ''
+    enabled: false
+    applicable_destinations: []
+    assignment_logic: base_user
+    rule1_type: starts_with
+    rule1_value: ''
+  '9':
+    id: '9'
+    created_at: '2025-08-30T13:56:17.423630'
+    created_by: frontend_create
+    last_modified: '2025-08-30T13:56:17.423630'
+    last_modified_by: frontend_create
+    version: 1
+    usage_count: 0
+    last_used: null
+    name: ''
+    crm_label_id: ''
+    enabled: false
+    applicable_destinations: []
+    assignment_logic: base_user
+    rule1_type: starts_with
+    rule1_value: ''
+  '10':
+    id: '10'
+    created_at: '2025-08-30T13:56:19.186730'
+    created_by: frontend_create
+    last_modified: '2025-08-30T13:56:19.186730'
+    last_modified_by: frontend_create
+    version: 1
+    usage_count: 0
+    last_used: null
+    name: ''
+    crm_label_id: ''
+    enabled: false
+    applicable_destinations: []
+    assignment_logic: base_user
+    rule1_type: starts_with
+    rule1_value: ''
+  '11':
+    id: '11'
+    created_at: '2025-08-30T14:01:06.648615'
+    created_by: frontend_create
+    last_modified: '2025-08-30T14:01:06.648615'
+    last_modified_by: frontend_create
+    version: 1
+    usage_count: 0
+    last_used: null
+    name: ''
+    crm_label_id: ''
+    enabled: false
+    applicable_destinations: []
+    assignment_logic: base_user
+    rule1_type: starts_with
+    rule1_value: ''

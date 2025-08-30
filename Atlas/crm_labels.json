@@ -1,0 +1,458 @@
+[
+  {
+    "id": "1a6a8895-dbc8-0f79-baaa-3a1addb35bca",
+    "name": "management tasks",
+    "slug": "management-tasks",
+    "active": true
+  },
+  {
+    "id": "9d0328af-fe5b-03ec-e402-3a1a9a51701f",
+    "name": "new request",
+    "slug": "new-request",
+    "active": true
+  },
+  {
+    "id": "aee4b4cf-d5e1-03ee-9052-3a1a9a4df010",
+    "name": "insurance",
+    "slug": "insurance",
+    "active": true
+  },
+  {
+    "id": "e274d4ce-cb24-b455-6d97-3a14fb107436",
+    "name": "mergetest4",
+    "slug": "mergetest4",
+    "active": true
+  },
+  {
+    "id": "f8e4f390-4c2f-b98c-c07d-3a14fb103411",
+    "name": "mergetest3",
+    "slug": "mergetest3",
+    "active": true
+  },
+  {
+    "id": "b468eb9a-7f7f-adce-353a-3a14fb0ff514",
+    "name": "mergetest2",
+    "slug": "mergetest2",
+    "active": true
+  },
+  {
+    "id": "c8630768-a193-2782-7882-3a14fb0ec937",
+    "name": "mergetest1",
+    "slug": "mergetest1",
+    "active": true
+  },
+  {
+    "id": "380cfdaf-39f2-d3c2-2ebc-3a14d4f64cfe",
+    "name": "testcontactlabel",
+    "slug": "testcontactlabel",
+    "active": true
+  },
+  {
+    "id": "8ed2d9ed-393f-544f-926f-3a128d699a24",
+    "name": "product",
+    "slug": "product",
+    "active": true
+  },
+  {
+    "id": "0948fae6-bb8f-6157-6fda-3a1227952ffb",
+    "name": "check confirmation",
+    "slug": "check-confirmation",
+    "active": true
+  },
+  {
+    "id": "25405ff2-fd78-9c77-4381-3a1187f3ba19",
+    "name": "newcomer",
+    "slug": "newcomer",
+    "active": true
+  },
+  {
+    "id": "79b3ede8-4c5f-5c71-f0fa-3a117f4adcb6",
+    "name": "call apointment",
+    "slug": "call-apointment",
+    "active": true
+  },
+  {
+    "id": "b5711b7e-f1fb-76d5-6e61-3a117f4a8c1b",
+    "name": "reply supplier",
+    "slug": "reply-supplier",
+    "active": true
+  },
+  {
+    "id": "a4538d74-1da6-9d9d-5bc8-3a117f4a238e",
+    "name": "reply customer",
+    "slug": "reply-customer",
+    "active": true
+  },
+  {
+    "id": "423b88bc-4d64-d810-b579-3a117f495a69",
+    "name": "contact email",
+    "slug": "contact-email",
+    "active": true
+  },
+  {
+    "id": "75e82e4d-fbca-5ec8-13e5-3a117f48e16d",
+    "name": "ahkp sturen",
+    "slug": "ahkp-sturen",
+    "active": true
+  },
+  {
+    "id": "744abd09-92dc-7cbc-ed66-3a0f7fb864d6",
+    "name": "payment client",
+    "slug": "payment-client",
+    "active": true
+  },
+  {
+    "id": "a47c3905-ec7e-5546-affb-3a0f7a57bda9",
+    "name": "supplier",
+    "slug": "supplier",
+    "active": true
+  },
+  {
+    "id": "7fc7d8f6-b5e9-a7fd-625c-3a0f7a4d4efa",
+    "name": "multidecliner",
+    "slug": "multidecliner",
+    "active": true
+  },
+  {
+    "id": "d1807cde-f7f4-0344-ff2f-3a0f7a4bfcde",
+    "name": "multi decliner",
+    "slug": "multi-decliner",
+    "active": true
+  },
+  {
+    "id": "07f4c4ee-3e5e-0211-79fb-3a0f7a4aedd6",
+    "name": "black list",
+    "slug": "black-list",
+    "active": true
+  },
+  {
+    "id": "6cc2c418-7e6d-68dc-e94c-3a0f6fe48580",
+    "name": "booking form new",
+    "slug": "booking-form-new",
+    "active": true
+  },
+  {
+    "id": "c87c39f9-0697-d992-3f60-3a0e3b921405",
+    "name": "others",
+    "slug": "others",
+    "active": true
+  },
+  {
+    "id": "87ad1bf6-405a-9ba7-c926-3a0e315b2470",
+    "name": "staff",
+    "slug": "staff",
+    "active": true
+  },
+  {
+    "id": "aaae925f-3728-d36a-c623-3a0dc50723df",
+    "name": "last info",
+    "slug": "last-info",
+    "active": true
+  },
+  {
+    "id": "32f4babf-da63-457d-d01e-3a0dc506f2ea",
+    "name": "traveling now!",
+    "slug": "traveling-now",
+    "active": true
+  },
+  {
+    "id": "ad6899ec-5b56-ba54-17b4-3a0dc50685c0",
+    "name": "decline before proposal",
+    "slug": "decline-before-proposal",
+    "active": true
+  },
+  {
+    "id": "ad5631af-13bb-1b3e-1bb0-3a0dc506492d",
+    "name": "reminder",
+    "slug": "reminder",
+    "active": true
+  },
+  {
+    "id": "8add3edb-acb8-864a-9770-3a0dc50623cc",
+    "name": "travel documents",
+    "slug": "travel-documents",
+    "active": true
+  },
+  {
+    "id": "8123ebb9-8b56-ea6d-1609-3a0dc505a59c",
+    "name": "question supplier",
+    "slug": "question-supplier",
+    "active": true
+  },
+  {
+    "id": "ec18838b-ee41-8a7f-67f8-3a0dc5057e8d",
+    "name": "question client",
+    "slug": "question-client",
+    "active": true
+  },
+  {
+    "id": "c919667d-2ecc-b3c5-aeca-3a0dc5054e8f",
+    "name": "proposal reaction",
+    "slug": "proposal-reaction",
+    "active": true
+  },
+  {
+    "id": "833585e0-3abd-4ae9-4c4a-3a0dc5051a4b",
+    "name": "payment supplier",
+    "slug": "payment-supplier",
+    "active": true
+  },
+  {
+    "id": "106313a2-ed5b-eda7-f5c8-3a0dc504a3da",
+    "name": "option flight",
+    "slug": "option-flight",
+    "active": true
+  },
+  {
+    "id": "d6072b05-f94a-76ca-4052-3a0dc5047a8e",
+    "name": "option sunny cars",
+    "slug": "option-sunny-cars",
+    "active": true
+  },
+  {
+    "id": "7f1ccc3e-7c85-95cf-6605-3a0dc50351e8",
+    "name": "create tp",
+    "slug": "create-tp",
+    "active": true
+  },
+  {
+    "id": "879aa887-0f94-4dbb-f5ee-3a0dc50318da",
+    "name": "post card",
+    "slug": "post-card",
+    "active": true
+  },
+  {
+    "id": "f37da252-a50b-69b6-a5b7-3a0dc502e59d",
+    "name": "flight print",
+    "slug": "flight-print",
+    "active": true
+  },
+  {
+    "id": "35fddea1-d5c2-15b3-fa4c-3a0dc502a69e",
+    "name": "flight schedule change",
+    "slug": "flight-schedule-change",
+    "active": true
+  },
+  {
+    "id": "c92246d7-ba4b-f9d4-24b4-3a0dc5026690",
+    "name": "feedback",
+    "slug": "feedback",
+    "active": true
+  },
+  {
+    "id": "dc2a1161-ff2c-3bf6-4e4b-3a0dc502441a",
+    "name": "decline after proposal",
+    "slug": "decline-after-proposal",
+    "active": true
+  },
+  {
+    "id": "bb1946b3-0a89-e95d-1b40-3a0dc502049f",
+    "name": "complaint",
+    "slug": "complaint",
+    "active": true
+  },
+  {
+    "id": "70a2a220-8ba2-dcbd-bf46-3a0dc501dab2",
+    "name": "cancellation",
+    "slug": "cancellation",
+    "active": true
+  },
+  {
+    "id": "8e3c0560-848b-7450-ac0c-3a0dbfc66042",
+    "name": "active",
+    "slug": "active",
+    "active": true
+  },
+  {
+    "id": "c0126043-1e1d-28a5-5c6e-3a0d5369a50f",
+    "name": "bird watching",
+    "slug": "bird-watching",
+    "active": true
+  },
+  {
+    "id": "9ec68a84-40ab-b05a-355a-3a0d53696775",
+    "name": "wild life",
+    "slug": "wild-life",
+    "active": true
+  },
+  {
+    "id": "ec11c213-a326-ec39-dca3-3a0d53689ddc",
+    "name": "trekking",
+    "slug": "trekking",
+    "active": true
+  },
+  {
+    "id": "68aff129-2cba-7766-1c4c-3a0d536851f4",
+    "name": "hiking",
+    "slug": "hiking",
+    "active": true
+  },
+  {
+    "id": "24dcac7c-6a13-d3d7-6ae7-3a0d5367b773",
+    "name": "cities",
+    "slug": "cities",
+    "active": true
+  },
+  {
+    "id": "3e27ea2e-f48e-e5b1-4b57-3a0d53676636",
+    "name": "nature",
+    "slug": "nature",
+    "active": true
+  },
+  {
+    "id": "0335ba7b-5346-125d-ac66-3a0d5366f643",
+    "name": "photography",
+    "slug": "photography",
+    "active": true
+  },
+  {
+    "id": "743bf667-6c4c-e150-c265-3a0d536692ee",
+    "name": "diving",
+    "slug": "diving",
+    "active": true
+  },
+  {
+    "id": "fda9cab7-3b18-043a-4918-3a0d53662ff9",
+    "name": "culture",
+    "slug": "culture",
+    "active": true
+  },
+  {
+    "id": "1572accc-d63f-25ab-125b-3a0d5365f5ab",
+    "name": "culinary",
+    "slug": "culinary",
+    "active": true
+  },
+  {
+    "id": "5a91a5cb-afc2-35a7-2ba5-3a0d53571656",
+    "name": "social",
+    "slug": "social",
+    "active": true
+  },
+  {
+    "id": "d6f5214e-9c94-8205-a896-3a0d5356cd6f",
+    "name": "rational",
+    "slug": "rational",
+    "active": true
+  },
+  {
+    "id": "eb4d2938-0eb5-1e5f-6ba2-3a0d53565ea6",
+    "name": "insecure",
+    "slug": "insecure",
+    "active": true
+  },
+  {
+    "id": "1d0d7fda-1c56-ffa2-14b9-3a0d53299f85",
+    "name": "fast travel",
+    "slug": "fast-travel",
+    "active": true
+  },
+  {
+    "id": "d0f74880-7e3c-c53f-ea6a-3a0d53296e68",
+    "name": "slow travel",
+    "slug": "slow-travel",
+    "active": true
+  },
+  {
+    "id": "e5fb791d-a1d5-fd5e-c33e-3a0d53292916",
+    "name": "public transport",
+    "slug": "public-transport",
+    "active": true
+  },
+  {
+    "id": "59da1b3e-20b9-9b31-6d91-3a0d5328cb16",
+    "name": "self drive",
+    "slug": "self-drive",
+    "active": true
+  },
+  {
+    "id": "5dceb202-0d76-fed2-42ab-3a0d5328329e",
+    "name": "home stay",
+    "slug": "home-stay",
+    "active": true
+  },
+  {
+    "id": "088d2fc6-f08a-fa6f-c394-3a0d53278446",
+    "name": "sustainable",
+    "slug": "sustainable",
+    "active": true
+  },
+  {
+    "id": "3ab0583b-5314-6476-77b9-3a0d5326e48c",
+    "name": "comfort",
+    "slug": "comfort",
+    "active": true
+  },
+  {
+    "id": "5ee008c0-a193-b65b-ca74-3a0d531ffcf7",
+    "name": "chat",
+    "slug": "chat",
+    "active": true
+  },
+  {
+    "id": "5f684571-f1d9-17e7-95a4-3a0d531c8deb",
+    "name": "zra",
+    "slug": "zra",
+    "active": true
+  },
+  {
+    "id": "f9401029-7f73-0fe4-c09d-3a0d531be20c",
+    "name": "friend 10% discount",
+    "slug": "friend-10-discount",
+    "active": true
+  },
+  {
+    "id": "91c02a25-26ec-56c8-9fd1-3a0d531b2473",
+    "name": "shopper",
+    "slug": "shopper",
+    "active": true
+  },
+  {
+    "id": "754ae69d-8d43-4f0e-59b9-3a0d531a7ec5",
+    "name": "repeater klant",
+    "slug": "repeater-klant",
+    "active": true
+  },
+  {
+    "id": "6c789523-1132-a576-3ab5-3a0d52fd5be6",
+    "name": "repeater",
+    "slug": "repeater",
+    "active": true
+  },
+  {
+    "id": "2e3ca6a5-e711-6953-5798-3a0d52fc20f7",
+    "name": "piñata",
+    "slug": "pinata",
+    "active": true
+  },
+  {
+    "id": "22adf87a-cc0e-32ae-fb82-3a0d52fb8656",
+    "name": "check note",
+    "slug": "check-note",
+    "active": true
+  },
+  {
+    "id": "8937a274-3dd0-b3ca-beb6-3a0c84ee0401",
+    "name": "budget",
+    "slug": "budget",
+    "active": true
+  },
+  {
+    "id": "9da6ad6b-d235-6e9d-6527-3a0c84ed063e",
+    "name": "dominant",
+    "slug": "dominant",
+    "active": true
+  },
+  {
+    "id": "07656c10-dff9-6bfb-ad95-3a0c84ebe553",
+    "name": "family",
+    "slug": "family",
+    "active": true
+  },
+  {
+    "id": "256ccdd5-1ea9-a894-8c9b-3a0c84e374d2",
+    "name": "ambassador",
+    "slug": "ambassador",
+    "active": true
+  }
+]

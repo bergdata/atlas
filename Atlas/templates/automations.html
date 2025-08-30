@@ -1,0 +1,2621 @@
+{% extends "base.html" %}
+
+{% block title %}Automations - Atlas Config{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-robot me-2"></i>Automation Configuration</h2>
+        <button class="btn btn-success" onclick="saveAllChanges()">
+            <i class="fas fa-save me-2"></i>Save All Changes
+        </button>
+    </div>
+
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i>
+        Configure automation rules for processing emails. Each automation can be enabled/disabled and configured for specific destinations.
+    </div>
+
+    {% for automation_id, automation in automations.items() %}
+    <div class="automation-card">
+        <div class="automation-header d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#automation-content-{{ automation_id }}" aria-expanded="true" style="cursor: pointer;">
+            <h5 class="mb-0">
+                <i class="fas fa-chevron-down me-2" id="chevron-{{ automation_id }}"></i>
+                Automation {{ automation_id }}
+                {% if automation.enabled %}
+                    <span class="badge bg-success status-badge">Enabled</span>
+                {% else %}
+                    <span class="badge bg-secondary status-badge">Disabled</span>
+                {% endif %}
+            </h5>
+            <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox"
+                       id="enabled_{{ automation_id }}"
+                       {% if automation.enabled %}checked{% endif %}
+                       onchange="updateAutomation('{{ automation_id }}', 'enabled', this.checked); event.stopPropagation();">
+                <label class="form-check-label" for="enabled_{{ automation_id }}">
+                    {% if automation.enabled %}Enabled{% else %}Disabled{% endif %}
+                </label>
+            </div>
+        </div>
+
+        <div id="automation-content-{{ automation_id }}" class="collapse show p-3">
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label for="name_{{ automation_id }}" class="form-label">
+                            <i class="fas fa-tag me-1"></i>Automation Name
+                        </label>
+                        <input type="text" class="form-control" id="name_{{ automation_id }}"
+                               value="{{ automation.name }}"
+                               onchange="markAutomationAsModified('{{ automation_id }}')"
+                               placeholder="Enter automation name (e.g., 'Je reisplan xyz is klaar')">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label for="crm_label_{{ automation_id }}" class="form-label">
+                            <i class="fas fa-id-card me-1"></i>CRM Label
+                        </label>
+                        <div class="dropdown">
+                            <button class="btn btn-outline-secondary dropdown-toggle w-100 text-start" type="button"
+                                    id="crmLabelDropdown_{{ automation_id }}" data-bs-toggle="dropdown">
+                                <span id="crmLabelText_{{ automation_id }}">
+                                    {% if automation.crm_label_id %}
+                                        {% for label in crm_labels %}
+                                            {% if label.id == automation.crm_label_id %}
+                                                {{ label.name }}
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% else %}
+                                        Select CRM Label...
+                                    {% endif %}
+                                </span>
+                            </button>
+                            <ul class="dropdown-menu w-100" id="crmLabelDropdownMenu_{{ automation_id }}" style="max-height: 300px; overflow-y: auto;">
+                                <li>
+                                    <div class="d-flex justify-content-center mx-2 my-2">
+                                        <div class="input-group" style="max-width: 280px;">
+                                            <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                            <input type="text" class="form-control" placeholder="Search labels..."
+                                                   id="crmLabelSearch_{{ automation_id }}">
+                                            <button class="btn btn-outline-secondary" type="button"
+                                                    onclick="clearCrmLabelSearch('{{ automation_id }}', event)"
+                                                    title="Clear search">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item" href="#" onclick="selectCrmLabel('{{ automation_id }}', '', 'Select CRM Label...')">
+                                        <em class="text-muted">Clear selection</em>
+                                    </a>
+                                </li>
+                                {% for label in crm_labels %}
+                                {% if label.get('active', True) %}
+                                <li>
+                                    <a class="dropdown-item crm-label-item" href="#"
+                                       onclick="selectCrmLabel('{{ automation_id }}', '{{ label.id }}', '{{ label.name }}')"
+                                       data-name="{{ label.name|lower }}"
+                                       data-id="{{ label.id }}">
+                                        {{ label.name }}
+                                    </a>
+                                </li>
+                                {% endif %}
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        <input type="hidden" id="crm_label_{{ automation_id }}" value="{{ automation.crm_label_id }}">
+                    </div>
+                </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label class="form-label">
+                                <i class="fas fa-envelope me-1"></i>Email Assignment
+                                <button type="button" class="btn btn-link btn-sm p-0 ms-2" onclick="showAssignmentHelp()">
+                                    <i class="fas fa-question-circle"></i>
+                                </button>
+                            </label>
+                            <div class="assignment-container" style="min-height: 70px;">
+                                <div class="assignment-buttons" id="assignment_buttons_{{ automation_id }}" style="width: 150px;">
+                                    <div class="btn-group-vertical w-100 btn-group-sm" role="group">
+                                        <input type="radio" class="btn-check" id="logic_base_user_{{ automation_id }}"
+                                               name="assignment_logic_{{ automation_id }}"
+                                               value="base_user"
+                                               {% if automation.get('assignment_logic', 'base_user') == 'base_user' %}checked{% endif %}
+                                               onchange="handleAssignmentChange('{{ automation_id }}', this.value)">
+                                        <label class="btn btn-outline-primary btn-sm text-start" for="logic_base_user_{{ automation_id }}">
+                                            <i class="fas fa-user-check me-2"></i>Base-User
+                                        </label>
+
+                                        <input type="radio" class="btn-check" id="logic_distribution_{{ automation_id }}"
+                                               name="assignment_logic_{{ automation_id }}"
+                                               value="distribution"
+                                               {% if automation.get('assignment_logic') == 'distribution' %}checked{% endif %}
+                                               onchange="handleAssignmentChange('{{ automation_id }}', this.value)">
+                                        <label class="btn btn-outline-success btn-sm text-start" for="logic_distribution_{{ automation_id }}">
+                                            <i class="fas fa-balance-scale me-2"></i>Distribution
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="selected-assignment" id="selected_assignment_{{ automation_id }}" style="display: none;">
+                                    <button type="button" class="btn btn-sm text-start" id="selected_method_button_{{ automation_id }}" onclick="showAssignmentOptions('{{ automation_id }}')" style="width: 150px; text-align: left;">
+                                        <span id="selected_method_{{ automation_id }}"></span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+            </div>
+
+            <!-- Email Filtering Rules -->
+            <div class="mb-3">
+                <label class="form-label">
+                    <i class="fas fa-filter me-1"></i>Email Filtering Rules
+                </label>
+                <div class="border rounded p-3">
+                    <!-- Dynamic Rules Container -->
+                    <div id="rules_container_{{ automation_id }}" class="rules-container row g-3">
+                        <!-- Rules will be dynamically added here -->
+                    </div>
+
+                    <!-- Add Rule Button -->
+                    <div class="text-center mt-3">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="addRule('{{ automation_id }}')" id="add_rule_btn_{{ automation_id }}">
+                            <i class="fas fa-plus me-1"></i>Add Rule
+                        </button>
+                    </div>
+
+                    <div class="form-text">
+                        <small class="text-muted">
+                            Configure rules to filter emails by subject. Empty rules are ignored.
+                        </small>
+                        <div id="ruleSummary_{{ automation_id }}" class="mt-2">
+                            <div class="text-primary fw-bold fs-6" id="ruleSummaryText_{{ automation_id }}"></div>
+                        </div>
+                        <button type="button" class="btn btn-link btn-sm p-0 ms-2" onclick="showRuleHelp()">
+                            <i class="fas fa-question-circle"></i> How do rules work?
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">
+                    <i class="fas fa-layer-group me-1"></i>Applicable Destination Groups
+                </label>
+                <div class="border rounded p-3" style="max-height: 200px; overflow-y: auto;">
+                    {% for group_id, group in destination_groups.items() %}
+                    <div class="form-check destination-checkbox">
+                        <input class="form-check-input" type="checkbox"
+                               id="group_{{ automation_id }}_{{ group_id }}"
+                               value="{{ group_id }}"
+                               {% if group_id in automation.applicable_destinations %}checked{% endif %}
+                               onchange="updateDestinations('{{ automation_id }}')">
+                        <label class="form-check-label" for="group_{{ automation_id }}_{{ group_id }}">
+                            {{ group.name }} ({{ group.destination_ids|length }} destinations, {{ group.employee_ids|length }} employees)
+                        </label>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="form-text">
+                    Selected {{ automation.applicable_destinations|length }} destination group(s)
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+
+    <!-- Create New Automation Button -->
+    <div class="text-center mt-4 mb-4">
+        <button type="button" class="btn btn-primary btn-lg" onclick="createNewAutomation()">
+            <i class="fas fa-plus-circle me-2"></i>Create New Automation
+        </button>
+    </div>
+
+    <div class="alert alert-warning mt-4">
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        <strong>Note:</strong> Changes are saved automatically when you modify fields. Use "Save All Changes" to ensure all modifications are persisted.
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Set up automation data for JavaScript
+window.automationsData = JSON.parse('{{ automations|tojson }}');
+window.scrollToId = '{{ scroll_to or "" }}';
+window.deletedAutomations = new Set(); // Track deleted automations
+window.destinationGroupsData = JSON.parse('{{ destination_groups|tojson }}');
+window.crmLabelsData = JSON.parse('{{ crm_labels|tojson }}');
+window.modifiedAutomations = new Set(); // Track automations with unsaved changes
+
+// CRM labels will be generated dynamically in the generateAutomationHtml function
+</script>
+<script>
+function updateAutomation(automationId, field, value) {
+    fetch('/automations/update', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            id: automationId,
+            field: field,
+            value: value
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update UI elements
+            if (field === 'enabled') {
+                const badge = document.querySelector(`#enabled_${automationId}`).closest('.automation-header').querySelector('.status-badge');
+                const label = document.querySelector(`[for="enabled_${automationId}"]`);
+
+                if (value) {
+                    badge.className = 'badge bg-success status-badge';
+                    badge.textContent = 'Enabled';
+                    label.textContent = 'Enabled';
+                } else {
+                    badge.className = 'badge bg-secondary status-badge';
+                    badge.textContent = 'Disabled';
+                    label.textContent = 'Disabled';
+                }
+            }
+            // Clear modified state after successful save
+            if (window.modifiedAutomations && window.modifiedAutomations.has(automationId)) {
+                window.modifiedAutomations.delete(automationId);
+                updateSaveButtonVisibility(automationId);
+            }
+            showToast('Automation updated successfully', 'success');
+        } else {
+            showToast('Error updating automation', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('Error updating automation', 'error');
+    });
+}
+
+function updateDestinations(automationId) {
+    const checkboxes = document.querySelectorAll(`input[id^="group_${automationId}_"]:checked`);
+    const selectedDestinations = Array.from(checkboxes).map(cb => cb.value);
+
+    // Update the count display
+    const countElement = document.querySelector(`input[id^="group_${automationId}_"]`).closest('.mb-3').querySelector('.form-text');
+    countElement.textContent = `Selected ${selectedDestinations.length} destination group(s)`;
+
+    // Mark automation as modified instead of saving immediately
+    markAutomationAsModified(automationId);
+}
+
+function validateAndUpdateRule(automationId, ruleNum, field, value) {
+    // Check for rule consistency and logical conflicts
+    if (field.includes('_type')) {
+        const container = document.getElementById(`rules_container_${automationId}`);
+        const ruleElements = container.querySelectorAll('.rule-item');
+
+        // Build current rule configuration with the proposed change
+        const currentRules = [];
+        ruleElements.forEach((ruleElement, index) => {
+            const currentRuleNum = index + 1;
+            const typeElement = ruleElement.querySelector(`#rule${currentRuleNum}_type_${automationId}`);
+            const valueElement = ruleElement.querySelector(`#rule${currentRuleNum}_value_${automationId}`);
+
+            if (typeElement && valueElement && valueElement.value.trim()) {
+                const ruleType = (currentRuleNum === ruleNum) ? value : typeElement.value;
+                currentRules.push({
+                    num: currentRuleNum,
+                    type: ruleType,
+                    value: valueElement.value.trim()
+                });
+            }
+        });
+
+        // Validate rule consistency
+        const validationError = validateRuleConsistency(currentRules, ruleNum, value);
+        if (validationError) {
+            showToast(validationError, 'error');
+
+            // Revert the selection to the previous valid value
+            const currentSelect = document.getElementById(`rule${ruleNum}_type_${automationId}`);
+            const currentValue = currentSelect.value;
+
+            // Reset to a valid option
+            if (currentValue === value) {
+                currentSelect.value = 'contains'; // Default to contains
+            }
+
+            return; // Don't update
+        }
+    }
+
+    // If validation passes, mark automation as modified instead of saving immediately
+    markAutomationAsModified(automationId);
+}
+
+function validateRuleConsistency(rules, changingRuleNum, newType) {
+    if (rules.length === 0) return null;
+
+    // Build complete rule configuration including the proposed change
+    const completeRules = rules.map(rule => {
+        if (rule.num === changingRuleNum) {
+            return { ...rule, type: newType };
+        }
+        return rule;
+    });
+
+    // Check for duplicate starts_with and ends_with
+    let startsWithCount = 0;
+    let endsWithCount = 0;
+    let startsWithPosition = -1;
+    let endsWithPosition = -1;
+
+    completeRules.forEach((rule, index) => {
+        if (rule.type === 'starts_with') {
+            startsWithCount++;
+            startsWithPosition = index;
+        }
+        if (rule.type === 'ends_with') {
+            endsWithCount++;
+            endsWithPosition = index;
+        }
+    });
+
+    // Check for duplicate rules
+    if (startsWithCount > 1) {
+        return 'Only one "Starts with" rule is allowed per automation';
+    }
+
+    if (endsWithCount > 1) {
+        return 'Only one "Ends with" rule is allowed per automation';
+    }
+
+    // Check position constraints
+    if (startsWithCount > 0 && startsWithPosition !== 0) {
+        return '"Starts with" rule must be the first rule';
+    }
+
+    if (endsWithCount > 0 && endsWithPosition !== completeRules.length - 1) {
+        return '"Ends with" rule must be the last rule (cannot have rules after it)';
+    }
+
+    return null; // No errors
+}
+
+function validateCompleteRuleConfiguration(automationId) {
+    // Get all current rules for this automation
+    const rulesContainer = document.getElementById(`rules_container_${automationId}`);
+    const ruleElements = rulesContainer.querySelectorAll('.rule-item');
+
+    if (ruleElements.length === 0) return null;
+
+    const currentRules = [];
+    ruleElements.forEach((ruleElement, index) => {
+        const ruleNum = index + 1;
+        const typeElement = ruleElement.querySelector(`#rule${ruleNum}_type_${automationId}`);
+        const valueElement = ruleElement.querySelector(`#rule${ruleNum}_value_${automationId}`);
+
+        if (typeElement && valueElement && valueElement.value.trim()) {
+            currentRules.push({
+                num: ruleNum,
+                type: typeElement.value,
+                value: valueElement.value.trim()
+            });
+        }
+    });
+
+    if (currentRules.length === 0) return null;
+
+    // Check for duplicate starts_with and ends_with
+    let startsWithCount = 0;
+    let endsWithCount = 0;
+    let startsWithPosition = -1;
+    let endsWithPosition = -1;
+
+    currentRules.forEach((rule, index) => {
+        if (rule.type === 'starts_with') {
+            startsWithCount++;
+            startsWithPosition = index;
+        }
+        if (rule.type === 'ends_with') {
+            endsWithCount++;
+            endsWithPosition = index;
+        }
+    });
+
+    // Check for duplicate rules
+    if (startsWithCount > 1) {
+        return 'Only one "Starts with" rule is allowed per automation';
+    }
+
+    if (endsWithCount > 1) {
+        return 'Only one "Ends with" rule is allowed per automation';
+    }
+
+    // Check position constraints
+    if (startsWithCount > 0 && startsWithPosition !== 0) {
+        return '"Starts with" rule must be the first rule';
+    }
+
+    if (endsWithCount > 0 && endsWithPosition !== currentRules.length - 1) {
+        return '"Ends with" rule must be the last rule (cannot have rules after it)';
+    }
+
+    return null; // No errors
+}
+
+function updateRule(automationId, field, value) {
+    // Mark automation as modified instead of saving immediately
+    markAutomationAsModified(automationId);
+    updateRuleSummary(automationId);
+}
+
+function updateRuleSummary(automationId) {
+    const container = document.getElementById(`rules_container_${automationId}`);
+    const ruleElements = container.querySelectorAll('.rule-item');
+    const rules = [];
+
+    ruleElements.forEach((ruleElement, index) => {
+        const ruleNum = index + 1;
+        const typeElement = ruleElement.querySelector(`#rule${ruleNum}_type_${automationId}`);
+        const valueElement = ruleElement.querySelector(`#rule${ruleNum}_value_${automationId}`);
+
+        if (typeElement && valueElement) {
+            const ruleType = typeElement.value;
+            const ruleValue = valueElement.value.trim();
+
+            if (ruleValue) {
+                rules.push({ type: ruleType, value: ruleValue });
+            }
+        }
+    });
+
+    // Build the visual pattern
+    const summaryElement = document.getElementById(`ruleSummaryText_${automationId}`);
+    if (summaryElement) {
+        if (rules.length === 0) {
+            summaryElement.textContent = '';
+            return;
+        }
+
+        let pattern = '';
+
+        rules.forEach((rule, index) => {
+            const isLastRule = index === rules.length - 1;
+            const isFirstRule = index === 0;
+
+            switch (rule.type) {
+                case 'starts_with':
+                    if (isFirstRule) {
+                        pattern += rule.value;
+                    } else {
+                        pattern += ` + ${rule.value}`;
+                    }
+                    // Add [any text...] unless next rule is also starts_with
+                    // OR if this is the last rule and it's ends_with (but starts_with should always have [any text...] when last)
+                    if (!isLastRule) {
+                        const nextRule = rules[index + 1];
+                        if (nextRule.type !== 'starts_with') {
+                            pattern += ' + [any text...]';
+                        }
+                    } else {
+                        // This is the last rule and it's starts_with, so add [any text...] at the end
+                        pattern += ' + [any text...]';
+                    }
+                    break;
+
+                case 'contains':
+                    if (isFirstRule) {
+                        pattern += '[any text...] + ' + rule.value;
+                    } else {
+                        // Check if previous rule already added [any text...]
+                        const prevRule = rules[index - 1];
+                        if (prevRule.type === 'starts_with') {
+                            // Previous starts_with already added [any text...], so just add the value
+                            pattern += ` + ${rule.value}`;
+                        } else {
+                            // Previous was contains, so add [any text...] + value
+                            pattern += ` + [any text...] + ${rule.value}`;
+                        }
+                    }
+                    // Add [any text...] after contains unless next rule is also contains
+                    // OR if this is the last rule (contains can have text after it)
+                    if (!isLastRule) {
+                        const nextRule = rules[index + 1];
+                        if (nextRule.type !== 'contains') {
+                            pattern += ' + [any text...]';
+                        }
+                    } else {
+                        // This is the last rule and it's contains, so add [any text...] at the end
+                        pattern += ' + [any text...]';
+                    }
+                    break;
+
+                case 'ends_with':
+                    if (isFirstRule) {
+                        pattern += '[any text...] + ' + rule.value;
+                    } else {
+                        // Check if previous rule already added [any text...]
+                        const prevRule = rules[index - 1];
+                        if (prevRule.type === 'starts_with' || prevRule.type === 'contains') {
+                            // Previous rule already added [any text...], so just add the value
+                            pattern += ` + ${rule.value}`;
+                        } else {
+                            // Previous was also ends_with, add [any text...] + value
+                            pattern += ` + [any text...] + ${rule.value}`;
+                        }
+                    }
+                    // Never add [any text...] after ends_with
+                    break;
+            }
+        });
+
+        summaryElement.textContent = pattern;
+    }
+}
+
+function createRuleElement(automationId, ruleNum, ruleType = 'contains', ruleValue = '') {
+    const ruleDiv = document.createElement('div');
+    ruleDiv.className = 'rule-item col-md-4';
+    ruleDiv.id = `rule_item_${ruleNum}_${automationId}`;
+
+    const canDelete = ruleNum > 1; // Only allow deleting rules 2 and 3
+
+    // Check existing rules to determine which options should be disabled
+    const container = document.getElementById(`rules_container_${automationId}`);
+    const existingRules = container.querySelectorAll('.rule-item');
+    const currentRules = [];
+
+    existingRules.forEach((ruleElement, index) => {
+        const currentRuleNum = index + 1;
+        const typeElement = ruleElement.querySelector(`#rule${currentRuleNum}_type_${automationId}`);
+        const valueElement = ruleElement.querySelector(`#rule${currentRuleNum}_value_${automationId}`);
+
+        if (typeElement && valueElement && valueElement.value.trim()) {
+            currentRules.push({
+                num: currentRuleNum,
+                type: typeElement.value,
+                value: valueElement.value.trim()
+            });
+        }
+    });
+
+    // Determine which options should be disabled
+    const hasStartsWith = currentRules.some(rule => rule.type === 'starts_with');
+    const hasEndsWith = currentRules.some(rule => rule.type === 'ends_with');
+
+    // If this is rule 1 and we already have starts_with somewhere, disable it
+    const disableStartsWith = ruleNum === 1 && hasStartsWith && currentRules.length > 0 && currentRules[0].type !== 'starts_with';
+
+    // If this is not rule 1 and we have starts_with as rule 1, disable starts_with
+    const disableStartsWithPosition = ruleNum > 1 && hasStartsWith && currentRules.length > 0 && currentRules[0].type === 'starts_with';
+
+    // If we already have ends_with anywhere, disable ends_with
+    const disableEndsWith = hasEndsWith;
+
+    // If we have ends_with and this is not the last position, disable all options
+    const disableAll = hasEndsWith && ruleNum > currentRules.length;
+
+    ruleDiv.innerHTML = `
+        <label class="form-label small">Subject Rule ${ruleNum}</label>
+        <div class="input-group">
+            <select class="form-select" id="rule${ruleNum}_type_${automationId}"
+                    onchange="validateAndUpdateRule('${automationId}', ${ruleNum}, 'rule${ruleNum}_type', this.value)">
+                <option value="starts_with" ${ruleType === 'starts_with' ? 'selected' : ''} ${disableStartsWith || disableStartsWithPosition || disableAll ? 'disabled' : ''}>Starts with</option>
+                <option value="ends_with" ${ruleType === 'ends_with' ? 'selected' : ''} ${disableEndsWith || disableAll ? 'disabled' : ''}>Ends with</option>
+                <option value="contains" ${ruleType === 'contains' ? 'selected' : ''} ${disableAll ? 'disabled' : ''}>Contains</option>
+            </select>
+            <input type="text" class="form-control" id="rule${ruleNum}_value_${automationId}"
+                   value="${ruleValue}"
+                   placeholder="Enter text..."
+                   onchange="updateRule('${automationId}', 'rule${ruleNum}_value', this.value)">
+            ${canDelete ? `<button type="button" class="btn btn-outline-danger btn-sm" onclick="deleteRule('${automationId}', ${ruleNum})" title="Delete rule">
+                <i class="fas fa-times"></i>
+            </button>` : ''}
+        </div>
+    `;
+
+    return ruleDiv;
+}
+
+function addRule(automationId) {
+    const container = document.getElementById(`rules_container_${automationId}`);
+    const existingRules = container.querySelectorAll('.rule-item').length;
+
+    if (existingRules >= 3) {
+        showToast('Maximum of 3 rules allowed', 'error');
+        return;
+    }
+
+    // Check if adding a new rule would be valid
+    const ruleElements = container.querySelectorAll('.rule-item');
+    const currentRules = [];
+    ruleElements.forEach((ruleElement, index) => {
+        const ruleNum = index + 1;
+        const typeElement = ruleElement.querySelector(`#rule${ruleNum}_type_${automationId}`);
+        const valueElement = ruleElement.querySelector(`#rule${ruleNum}_value_${automationId}`);
+
+        if (typeElement && valueElement && valueElement.value.trim()) {
+            currentRules.push({
+                num: ruleNum,
+                type: typeElement.value,
+                value: valueElement.value.trim()
+            });
+        }
+    });
+
+    // Check if any existing rule is "ends_with" - if so, can't add more rules
+    const hasEndsWith = currentRules.some(rule => rule.type === 'ends_with');
+    if (hasEndsWith) {
+        showToast('Cannot add more rules after an "Ends with" rule', 'error');
+        return;
+    }
+
+    // Check if we're trying to add a rule when "starts_with" is not first
+    const hasStartsWith = currentRules.some(rule => rule.type === 'starts_with');
+    if (hasStartsWith && currentRules.length > 0 && currentRules[0].type !== 'starts_with') {
+        showToast('"Starts with" rule must be the first rule', 'error');
+        return;
+    }
+
+    const newRuleNum = existingRules + 1;
+    const ruleElement = createRuleElement(automationId, newRuleNum);
+    container.appendChild(ruleElement);
+
+    // Update add button visibility
+    updateAddButtonVisibility(automationId);
+
+    // Update rule summary
+    updateRuleSummary(automationId);
+
+    // Mark automation as modified
+    markAutomationAsModified(automationId);
+
+    showToast(`Rule ${newRuleNum} added`, 'success');
+}
+
+function deleteRule(automationId, ruleNum) {
+    const ruleElement = document.getElementById(`rule_item_${ruleNum}_${automationId}`);
+    if (ruleElement) {
+        ruleElement.remove();
+
+        // Renumber remaining rules
+        renumberRules(automationId);
+
+        // Update add button visibility
+        updateAddButtonVisibility(automationId);
+
+        // Update rule summary
+        updateRuleSummary(automationId);
+
+        // Mark automation as modified
+        markAutomationAsModified(automationId);
+
+        showToast(`Rule ${ruleNum} deleted`, 'success');
+    }
+}
+
+function renumberRules(automationId) {
+    const container = document.getElementById(`rules_container_${automationId}`);
+    const ruleElements = container.querySelectorAll('.rule-item');
+
+    ruleElements.forEach((ruleElement, index) => {
+        const newRuleNum = index + 1;
+        const oldRuleNum = parseInt(ruleElement.id.split('_')[2]);
+
+        if (oldRuleNum !== newRuleNum) {
+            // Update IDs and labels
+            ruleElement.id = `rule_item_${newRuleNum}_${automationId}`;
+
+            const label = ruleElement.querySelector('.form-label');
+            if (label) label.textContent = `Subject Rule ${newRuleNum}`;
+
+            const typeSelect = ruleElement.querySelector('select');
+            if (typeSelect) {
+                typeSelect.id = `rule${newRuleNum}_type_${automationId}`;
+                typeSelect.setAttribute('onchange', `validateAndUpdateRule('${automationId}', ${newRuleNum}, 'rule${newRuleNum}_type', this.value)`);
+            }
+
+            const valueInput = ruleElement.querySelector('input[type="text"]');
+            if (valueInput) {
+                valueInput.id = `rule${newRuleNum}_value_${automationId}`;
+                valueInput.setAttribute('onchange', `updateRule('${automationId}', 'rule${newRuleNum}_value', this.value)`);
+            }
+
+            const deleteBtn = ruleElement.querySelector('button[onclick*="deleteRule"]');
+            if (deleteBtn) {
+                deleteBtn.setAttribute('onclick', `deleteRule('${automationId}', ${newRuleNum})`);
+            }
+        }
+    });
+}
+
+function updateAddButtonVisibility(automationId) {
+    const container = document.getElementById(`rules_container_${automationId}`);
+    const existingRules = container.querySelectorAll('.rule-item').length;
+    const addButton = document.getElementById(`add_rule_btn_${automationId}`);
+
+    if (existingRules >= 3) {
+        addButton.style.display = 'none';
+    } else {
+        addButton.style.display = 'inline-block';
+    }
+}
+
+function initializeRules(automationId, automation) {
+    const container = document.getElementById(`rules_container_${automationId}`);
+
+    // Clear existing rules
+    container.innerHTML = '';
+
+    // Add rules based on existing data
+    const rules = [];
+
+    // Check for existing rules in automation data
+    if (automation.rule1_value && automation.rule1_value.trim()) {
+        rules.push({
+            num: 1,
+            type: automation.rule1_type || 'starts_with',
+            value: automation.rule1_value
+        });
+    }
+
+    if (automation.rule2_value && automation.rule2_value.trim()) {
+        rules.push({
+            num: 2,
+            type: automation.rule2_type || 'contains',
+            value: automation.rule2_value
+        });
+    }
+
+    if (automation.rule3_value && automation.rule3_value.trim()) {
+        rules.push({
+            num: 3,
+            type: automation.rule3_type || 'contains',
+            value: automation.rule3_value
+        });
+    }
+
+    // If no rules exist, add one default rule
+    if (rules.length === 0) {
+        rules.push({
+            num: 1,
+            type: 'starts_with',
+            value: ''
+        });
+    }
+
+    // Create rule elements
+    rules.forEach(rule => {
+        const ruleElement = createRuleElement(automationId, rule.num, rule.type, rule.value);
+        container.appendChild(ruleElement);
+    });
+
+    // Update add button visibility
+    updateAddButtonVisibility(automationId);
+
+    // Update rule summary
+    updateRuleSummary(automationId);
+}
+
+function selectCrmLabel(automationId, labelId, labelName) {
+    // Update the hidden input
+    document.getElementById(`crm_label_${automationId}`).value = labelId;
+
+    // Update the display text
+    document.getElementById(`crmLabelText_${automationId}`).textContent = labelName;
+
+    // Mark automation as modified instead of saving immediately
+    markAutomationAsModified(automationId);
+
+    // Close the dropdown
+    const dropdown = bootstrap.Dropdown.getInstance(document.getElementById(`crmLabelDropdown_${automationId}`));
+    if (dropdown) {
+        dropdown.hide();
+    }
+}
+
+function filterCrmLabels(automationId) {
+    const searchInput = document.getElementById(`crmLabelSearch_${automationId}`);
+    if (!searchInput) {
+        return;
+    }
+
+    const searchTerm = searchInput.value.toLowerCase().trim();
+
+    // Find the dropdown menu (UL element) for this automation
+    const dropdownMenu = document.getElementById(`crmLabelDropdownMenu_${automationId}`);
+    if (!dropdownMenu) {
+        return;
+    }
+
+    // Find CRM label items within the dropdown menu
+    const items = dropdownMenu.querySelectorAll('.crm-label-item');
+
+    items.forEach((item) => {
+        const name = item.getAttribute('data-name') || '';
+        const id = item.getAttribute('data-id') || '';
+        const text = item.textContent.toLowerCase().trim();
+
+        // Simple search logic
+        const nameMatch = name.includes(searchTerm);
+        const idMatch = id.toLowerCase().includes(searchTerm);
+        const textMatch = text.includes(searchTerm);
+        const shouldShow = searchTerm === '' || nameMatch || idMatch || textMatch;
+
+        item.style.display = shouldShow ? 'block' : 'none';
+    });
+}
+
+function clearCrmLabelSearch(automationId, event) {
+    // Prevent the dropdown from closing
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+
+    const searchInput = document.getElementById(`crmLabelSearch_${automationId}`);
+    searchInput.value = '';
+    filterCrmLabels(automationId);
+    searchInput.focus();
+}
+
+function handleSearchKey(automationId, event) {
+    if (event.key === 'Escape') {
+        clearCrmLabelSearch(automationId);
+    } else if (event.key === 'Enter') {
+        // Close dropdown on Enter
+        const dropdown = bootstrap.Dropdown.getInstance(document.getElementById(`crmLabelDropdown_${automationId}`));
+        if (dropdown) {
+            dropdown.hide();
+        }
+    }
+}
+
+
+
+// Initialize collapse functionality for automation cards
+document.addEventListener('DOMContentLoaded', function() {
+    // Add event listeners for all CRM label search inputs
+    document.querySelectorAll('[id^="crmLabelSearch_"]').forEach(function(searchInput) {
+        const automationId = searchInput.id.replace('crmLabelSearch_', '');
+
+        // Add input event listener (more reliable than onkeyup)
+        searchInput.addEventListener('input', function() {
+            filterCrmLabels(automationId);
+        });
+
+        // Also handle keyup for better compatibility
+        searchInput.addEventListener('keyup', function(event) {
+            // Handle special keys
+            if (event.key === 'Escape') {
+                clearCrmLabelSearch(automationId);
+            } else if (event.key === 'Enter') {
+                // Close dropdown on Enter
+                const dropdown = bootstrap.Dropdown.getInstance(document.getElementById(`crmLabelDropdown_${automationId}`));
+                if (dropdown) {
+                    dropdown.hide();
+                }
+            }
+        });
+    });
+
+    // Initialize collapse functionality for all automation cards
+    document.querySelectorAll('.automation-header[data-bs-toggle="collapse"]').forEach(function(header) {
+        const automationId = header.querySelector('input[id^="enabled_"]').id.replace('enabled_', '');
+        const collapseElement = document.getElementById(`automation-content-${automationId}`);
+        const chevronIcon = document.getElementById(`chevron-${automationId}`);
+
+        // Add event listener for collapse show/hide
+        collapseElement.addEventListener('show.bs.collapse', function() {
+            if (chevronIcon) {
+                chevronIcon.className = 'fas fa-chevron-down me-2';
+            }
+            // Save collapsed state
+            saveCollapseState(automationId, false);
+        });
+
+        collapseElement.addEventListener('hide.bs.collapse', function() {
+            if (chevronIcon) {
+                chevronIcon.className = 'fas fa-chevron-right me-2';
+            }
+            // Save collapsed state
+            saveCollapseState(automationId, true);
+        });
+    });
+
+    // Restore collapse states from localStorage
+    restoreCollapseStates();
+
+    // Initialize rules for all automations
+    initializeAllRules();
+
+    // Handle scroll to specific automation
+    handleScrollToAutomation();
+
+    // Check for scrollTo parameter and scroll to the specified automation immediately
+    const scrollToId = window.scrollToId;
+    if (scrollToId && scrollToId.trim()) {
+        // Use requestAnimationFrame to ensure DOM is ready but scroll immediately
+        requestAnimationFrame(() => {
+            // Try multiple selector approaches for better browser compatibility
+            let automationElement = document.querySelector(`.automation-card:has(input[id="enabled_${scrollToId}"])`);
+
+            // Fallback selectors if :has() is not supported
+            if (!automationElement) {
+                const enabledInput = document.querySelector(`input[id="enabled_${scrollToId}"]`);
+                if (enabledInput) {
+                    automationElement = enabledInput.closest('.automation-card');
+                }
+            }
+
+            if (automationElement) {
+                // Scroll immediately without smooth behavior to prevent jumping
+                automationElement.scrollIntoView({
+                    behavior: 'auto', // Use 'auto' instead of 'smooth' for immediate scroll
+                    block: 'start'
+                });
+
+                // Add highlight effect after scrolling
+                setTimeout(() => {
+                    automationElement.style.transition = 'background-color 0.3s';
+                    automationElement.style.backgroundColor = '#e3f2fd';
+                    setTimeout(() => {
+                        automationElement.style.backgroundColor = '';
+                    }, 2000);
+                }, 50);
+            }
+        });
+    }
+});
+
+// Function to initialize rules for all automations
+function initializeAllRules() {
+    // Automation data is stored in a global variable set by the template
+    if (typeof window.automationsData !== 'undefined') {
+        Object.keys(window.automationsData).forEach(automationId => {
+            initializeRules(automationId, window.automationsData[automationId]);
+            initializeAssignmentDisplay(automationId, window.automationsData[automationId]);
+        });
+    }
+}
+
+// Function to handle scrolling to a specific automation
+function handleScrollToAutomation() {
+    // Check for scrollTo parameter in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const scrollToId = urlParams.get('scrollTo');
+
+    if (scrollToId && scrollToId.trim()) {
+        // Use requestAnimationFrame to ensure DOM is ready
+        requestAnimationFrame(() => {
+            // Try multiple selector approaches for better browser compatibility
+            let automationElement = document.querySelector(`.automation-card:has(input[id="enabled_${scrollToId}"])`);
+
+            // Fallback selectors if :has() is not supported
+            if (!automationElement) {
+                const enabledInput = document.querySelector(`input[id="enabled_${scrollToId}"]`);
+                if (enabledInput) {
+                    automationElement = enabledInput.closest('.automation-card');
+                }
+            }
+
+            if (automationElement) {
+                // Scroll immediately without smooth behavior to prevent jumping
+                automationElement.scrollIntoView({
+                    behavior: 'auto', // Use 'auto' for immediate scroll
+                    block: 'start'
+                });
+
+                // Add highlight effect after scrolling
+                setTimeout(() => {
+                    automationElement.style.transition = 'background-color 0.3s';
+                    automationElement.style.backgroundColor = '#e3f2fd'; // Light blue highlight
+                    setTimeout(() => {
+                        automationElement.style.backgroundColor = '';
+                    }, 2000); // Remove highlight after 2 seconds
+                }, 50);
+            }
+        });
+    }
+}
+
+function saveAllChanges() {
+    // First validate all automations for rule consistency
+    const automationCards = document.querySelectorAll('.automation-card');
+    let validationErrors = [];
+
+    automationCards.forEach(card => {
+        const automationId = card.querySelector('input[id^="enabled_"]').id.replace('enabled_', '');
+
+        // Skip automations that have been marked for deletion
+        if (window.deletedAutomations.has(automationId)) {
+            return;
+        }
+
+        // Validate rule configuration
+        const validationError = validateCompleteRuleConfiguration(automationId);
+        if (validationError) {
+            validationErrors.push(`Automation ${automationId}: ${validationError}`);
+        }
+    });
+
+    // If there are validation errors, show them and stop saving
+    if (validationErrors.length > 0) {
+        showToast('Cannot save due to validation errors:<br>' + validationErrors.join('<br>'), 'error');
+        return;
+    }
+
+    // Collect all automation data from the current form state
+    const automationsData = {};
+
+    automationCards.forEach(card => {
+        const automationId = card.querySelector('input[id^="enabled_"]').id.replace('enabled_', '');
+
+        // Skip automations that have been marked for deletion
+        if (window.deletedAutomations.has(automationId)) {
+            return;
+        }
+
+        // Collect basic automation data
+        const automationData = {
+            name: document.getElementById(`name_${automationId}`)?.value || '',
+            crm_label_id: document.getElementById(`crm_label_${automationId}`)?.value || '',
+            enabled: document.getElementById(`enabled_${automationId}`)?.checked || false,
+            applicable_destinations: [],
+            assignment_logic: 'base_user'  // default
+        };
+
+        // Collect destination groups
+        const destinationCheckboxes = card.querySelectorAll('input[id^="group_"]:checked');
+        automationData.applicable_destinations = Array.from(destinationCheckboxes).map(cb =>
+            cb.value
+        );
+
+        // Collect assignment logic
+        const baseUserRadio = document.getElementById(`logic_base_user_${automationId}`);
+        const distributionRadio = document.getElementById(`logic_distribution_${automationId}`);
+        if (baseUserRadio?.checked) {
+            automationData.assignment_logic = 'base_user';
+        } else if (distributionRadio?.checked) {
+            automationData.assignment_logic = 'distribution';
+        }
+
+        // Collect rules
+        const rulesContainer = document.getElementById(`rules_container_${automationId}`);
+        const ruleElements = rulesContainer.querySelectorAll('.rule-item');
+
+        ruleElements.forEach((ruleElement, index) => {
+            const ruleNum = index + 1;
+            const typeElement = ruleElement.querySelector(`#rule${ruleNum}_type_${automationId}`);
+            const valueElement = ruleElement.querySelector(`#rule${ruleNum}_value_${automationId}`);
+
+            if (typeElement && valueElement && valueElement.value.trim()) {
+                automationData[`rule${ruleNum}_type`] = typeElement.value;
+                automationData[`rule${ruleNum}_value`] = valueElement.value.trim();
+            }
+        });
+
+        automationsData[automationId] = automationData;
+    });
+
+    // Send bulk save request
+    fetch('/automations/save_all', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            automations: automationsData
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Clear the deleted automations set after successful save
+            window.deletedAutomations.clear();
+            showToast('All changes have been saved to configuration file!', 'success');
+        } else {
+            showToast('Error saving changes: ' + (data.error || 'Unknown error'), 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('Error saving changes', 'error');
+    });
+}
+
+function showAssignmentHelp() {
+    const modal = document.createElement('div');
+    modal.className = 'modal fade';
+    modal.id = 'assignmentHelpModal';
+    modal.setAttribute('tabindex', '-1');
+    modal.innerHTML = `
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-envelope me-2"></i>Email Assignment Methods
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>How email assignment works:</strong> When an automation processes an email,
+                        it needs to determine which user should handle it. Choose the method that best fits your workflow.
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card h-100 border-primary">
+                                <div class="card-header bg-primary text-white">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-user-check me-2"></i>Base-User Method
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <p class="card-text">
+                                        <strong>Intelligent Assignment:</strong><br>
+                                        Searches the email content (subject, body, and previous emails) for employee names or email addresses.
+                                    </p>
+
+                                    <div class="alert alert-light">
+                                        <strong>How it works:</strong>
+                                        <ol class="mb-0 small">
+                                            <li>Scans email content for known employee names</li>
+                                            <li>Checks for employee email addresses</li>
+                                            <li>If match found → assigns to that employee</li>
+                                            <li>If no match → assigns to base user</li>
+                                        </ol>
+                                    </div>
+
+                                    <div class="alert alert-success">
+                                        <strong>Best for:</strong><br>
+                                        <small>Personalized service, direct communication, when emails mention specific team members</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="card h-100 border-success">
+                                <div class="card-header bg-success text-white">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-balance-scale me-2"></i>Distribution Method
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <p class="card-text">
+                                        <strong>Fair Load Balancing:</strong><br>
+                                        Assigns emails to available users in a round-robin fashion, regardless of content.
+                                    </p>
+
+                                    <div class="alert alert-light">
+                                        <strong>How it works:</strong>
+                                        <ol class="mb-0 small">
+                                            <li>Email 1 → User 1</li>
+                                            <li>Email 2 → User 2</li>
+                                            <li>Email 3 → User 1</li>
+                                            <li>Email 4 → User 2</li>
+                                            <li>...continues pattern</li>
+                                        </ol>
+                                    </div>
+
+                                    <div class="alert alert-success">
+                                        <strong>Best for:</strong><br>
+                                        <small>Equal workload distribution, generic inquiries, when content doesn't indicate specific handlers</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <div class="alert alert-warning">
+                        <h6><i class="fas fa-lightbulb me-2"></i>Choosing the Right Method</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <strong>Use Base-User when:</strong>
+                                <ul class="mb-0 small">
+                                    <li>Emails often mention specific employees</li>
+                                    <li>You want personalized handling</li>
+                                    <li>Content indicates the right person</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Use Distribution when:</strong>
+                                <ul class="mb-0 small">
+                                    <li>You want fair workload sharing</li>
+                                    <li>Any team member can handle the email</li>
+                                    <li>Content doesn't indicate specific handlers</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-secondary">
+                        <h6><i class="fas fa-cog me-2"></i>Technical Details</h6>
+                        <small>
+                            Both methods use the destination configuration to determine available users and base user settings.
+                            The assignment happens during email processing and can be changed at any time without affecting existing assignments.
+                        </small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Show the modal
+    const modalInstance = new bootstrap.Modal(modal);
+    modalInstance.show();
+
+    // Clean up when modal is hidden
+    modal.addEventListener('hidden.bs.modal', function() {
+        modal.remove();
+    });
+}
+
+function showRuleHelp() {
+    // Get current rule values from the first automation (assuming there's at least one)
+    const rule1Type = document.getElementById('rule1_type_1')?.value || 'starts_with';
+    const rule1Value = document.getElementById('rule1_value_1')?.value || '';
+    const rule2Type = document.getElementById('rule2_type_1')?.value || 'contains';
+    const rule2Value = document.getElementById('rule2_value_1')?.value || '';
+    const rule3Type = document.getElementById('rule3_type_1')?.value || 'contains';
+    const rule3Value = document.getElementById('rule3_value_1')?.value || '';
+
+    // Generate personalized examples
+    const generateExamples = (ruleType, ruleValue, ruleNumber) => {
+        if (!ruleValue.trim()) {
+            return {
+                description: `Rule ${ruleNumber} is empty and will be ignored.`,
+                examples: []
+            };
+        }
+
+        let description = '';
+        let examples = [];
+
+        switch (ruleType) {
+            case 'starts_with':
+                description = `Email subject must begin with "${ruleValue}"`;
+                examples = [
+                    { text: `${ruleValue} Vietnam trip confirmed!`, match: true },
+                    { text: `Update: ${ruleValue} Vietnam trip confirmed!`, match: false },
+                    { text: `Important: ${ruleValue} Vietnam booking`, match: true }
+                ];
+                break;
+            case 'contains':
+                description = `Email subject must contain "${ruleValue}" anywhere in the text`;
+                examples = [
+                    { text: `Vietnam trip ${ruleValue} is ready!`, match: true },
+                    { text: `Update: ${ruleValue} Vietnam notification`, match: true },
+                    { text: `Important Vietnam travel notification`, match: false }
+                ];
+                break;
+            case 'ends_with':
+                description = `Email subject must end with "${ruleValue}"`;
+                examples = [
+                    { text: `Vietnam trip is ${ruleValue}`, match: true },
+                    { text: `Vietnam trip is ${ruleValue} - Update`, match: false },
+                    { text: `Important: Vietnam ${ruleValue}`, match: true }
+                ];
+                break;
+        }
+
+        return { description, examples };
+    };
+
+    const rule1Examples = generateExamples(rule1Type, rule1Value, 1);
+    const rule2Examples = generateExamples(rule2Type, rule2Value, 2);
+    const rule3Examples = generateExamples(rule3Type, rule3Value, 3);
+
+    // Generate combination example
+    const generateCombinationExample = () => {
+        const activeRules = [];
+        if (rule1Value.trim()) activeRules.push({ type: rule1Type, value: rule1Value, num: 1 });
+        if (rule2Value.trim()) activeRules.push({ type: rule2Type, value: rule2Value, num: 2 });
+        if (rule3Value.trim()) activeRules.push({ type: rule3Type, value: rule3Value, num: 3 });
+
+        if (activeRules.length === 0) {
+            return '<em class="text-muted">No rules configured yet.</em>';
+        }
+
+        let exampleSubject = '';
+        let willMatch = true;
+        let wontMatch = true;
+
+        // Build example subject that matches all rules
+        activeRules.forEach((rule, index) => {
+            switch (rule.type) {
+                case 'starts_with':
+                    if (index === 0) exampleSubject = rule.value;
+                    break;
+                case 'contains':
+                    if (index === 0) exampleSubject = `Email about ${rule.value}`;
+                    else if (!exampleSubject.includes(rule.value)) exampleSubject += ` ${rule.value}`;
+                    break;
+                case 'ends_with':
+                    if (index === activeRules.length - 1) {
+                        if (!exampleSubject) exampleSubject = `Travel plan ${rule.value}`;
+                        else exampleSubject += ` ${rule.value}`;
+                    }
+                    break;
+            }
+        });
+
+        // Build subject that won't match (violate first rule)
+        let wontMatchSubject = '';
+        if (activeRules.length > 0) {
+            const firstRule = activeRules[0];
+            switch (firstRule.type) {
+                case 'starts_with':
+                    wontMatchSubject = `Update: ${exampleSubject}`;
+                    break;
+                case 'contains':
+                    wontMatchSubject = `Travel notification`;
+                    break;
+                case 'ends_with':
+                    wontMatchSubject = `${exampleSubject} - Update`;
+                    break;
+            }
+        }
+
+        return `
+            <strong>Your current rules:</strong>
+            <ul class="mb-2">
+                ${activeRules.map(rule => `<li><strong>Rule ${rule.num}:</strong> "${rule.type.replace('_', ' ')}" → "${rule.value}"</li>`).join('')}
+            </ul>
+            <div class="mt-2">
+                <span class="text-success">✅ Will match:</span> "${exampleSubject || 'Configure rules first'}"<br>
+                <span class="text-danger">❌ Won't match:</span> "${wontMatchSubject || 'Configure rules first'}"
+            </div>
+        `;
+    };
+
+    const modal = document.createElement('div');
+    modal.className = 'modal fade';
+    modal.id = 'ruleHelpModal';
+    modal.setAttribute('tabindex', '-1');
+    modal.innerHTML = `
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-question-circle me-2"></i>How Your Email Filtering Rules Work
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-primary">
+                        <i class="fas fa-lightbulb me-2"></i>
+                        <strong>Your Current Setup:</strong> This help shows examples based on the values you've entered in your rules.
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="card h-100 border-primary">
+                                <div class="card-header bg-primary text-white">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-play me-2"></i>Rule 1: ${rule1Type.replace('_', ' ').toUpperCase()}
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <p class="card-text">
+                                        <strong>What it does:</strong><br>
+                                        ${rule1Examples.description}
+                                    </p>
+                                    ${rule1Value.trim() ? `
+                                    <div class="alert alert-info">
+                                        <strong>Your Rule 1 examples:</strong><br>
+                                        ${rule1Examples.examples.map(ex =>
+                                            `<span class="${ex.match ? 'text-success' : 'text-danger'}">${ex.match ? '✅' : '❌'}</span> "${ex.text}"<br>`
+                                        ).join('')}
+                                    </div>
+                                    ` : '<div class="alert alert-secondary">Rule 1 is empty</div>'}
+                                    <small class="text-muted">
+                                        ${rule1Type === 'starts_with' ? 'The subject line must start exactly with your specified text' :
+                                          rule1Type === 'contains' ? 'Like %your_text% - text can be anywhere in the subject' :
+                                          'The subject line must end exactly with your specified text'}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <div class="card h-100 border-success">
+                                <div class="card-header bg-success text-white">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-search me-2"></i>Rule 2: ${rule2Type.replace('_', ' ').toUpperCase()}
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <p class="card-text">
+                                        <strong>What it does:</strong><br>
+                                        ${rule2Examples.description}
+                                    </p>
+                                    ${rule2Value.trim() ? `
+                                    <div class="alert alert-info">
+                                        <strong>Your Rule 2 examples:</strong><br>
+                                        ${rule2Examples.examples.map(ex =>
+                                            `<span class="${ex.match ? 'text-success' : 'text-danger'}">${ex.match ? '✅' : '❌'}</span> "${ex.text}"<br>`
+                                        ).join('')}
+                                    </div>
+                                    ` : '<div class="alert alert-secondary">Rule 2 is empty</div>'}
+                                    <small class="text-muted">
+                                        ${rule2Type === 'starts_with' ? 'The subject line must start exactly with your specified text' :
+                                          rule2Type === 'contains' ? 'Like %your_text% - text can be anywhere in the subject' :
+                                          'The subject line must end exactly with your specified text'}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <div class="card h-100 border-warning">
+                                <div class="card-header bg-warning text-dark">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-stop me-2"></i>Rule 3: ${rule3Type.replace('_', ' ').toUpperCase()}
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <p class="card-text">
+                                        <strong>What it does:</strong><br>
+                                        ${rule3Examples.description}
+                                    </p>
+                                    ${rule3Value.trim() ? `
+                                    <div class="alert alert-info">
+                                        <strong>Your Rule 3 examples:</strong><br>
+                                        ${rule3Examples.examples.map(ex =>
+                                            `<span class="${ex.match ? 'text-success' : 'text-danger'}">${ex.match ? '✅' : '❌'}</span> "${ex.text}"<br>`
+                                        ).join('')}
+                                    </div>
+                                    ` : '<div class="alert alert-secondary">Rule 3 is empty</div>'}
+                                    <small class="text-muted">
+                                        ${rule3Type === 'starts_with' ? 'The subject line must start exactly with your specified text' :
+                                          rule2Type === 'contains' ? 'Like %your_text% - text can be anywhere in the subject' :
+                                          'The subject line must end exactly with your specified text'}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <div class="alert alert-light">
+                        <h6><i class="fas fa-lightbulb me-2"></i>How Your Rules Work Together</h6>
+                        <p class="mb-2">All active rules must match for an email to be processed (AND condition):</p>
+                        <div class="bg-white p-3 rounded border">
+                            ${generateCombinationExample()}
+                        </div>
+                    </div>
+
+                    <div class="alert alert-secondary">
+                        <h6><i class="fas fa-info-circle me-2"></i>Empty Rules</h6>
+                        <p class="mb-0">If you leave a rule text box empty, that rule will be ignored and won't affect filtering.</p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Show the modal
+    const modalInstance = new bootstrap.Modal(modal);
+    modalInstance.show();
+
+    // Clean up when modal is hidden
+    modal.addEventListener('hidden.bs.modal', function() {
+        modal.remove();
+    });
+}
+
+function markAutomationAsModified(automationId) {
+    if (!window.modifiedAutomations) {
+        window.modifiedAutomations = new Set();
+    }
+
+    // Store original state if not already stored
+    if (!window.originalStates) {
+        window.originalStates = {};
+    }
+
+    if (!window.originalStates[automationId]) {
+        // Store the current state as original before any modifications
+        window.originalStates[automationId] = getCurrentAutomationState(automationId);
+    }
+
+    // Add automation to modified set
+    window.modifiedAutomations.add(automationId);
+
+    // Update save button visibility
+    updateSaveButtonVisibility(automationId);
+
+    // Add visual indicator to the automation header
+    const header = document.querySelector(`.automation-header:has(input[id="enabled_${automationId}"])`) ||
+                   document.querySelector(`input[id="enabled_${automationId}"]`).closest('.automation-header');
+    if (header && !header.querySelector('.unsaved-indicator')) {
+        const indicator = document.createElement('span');
+        indicator.className = 'badge bg-warning text-dark ms-2 unsaved-indicator';
+        indicator.innerHTML = `
+            <i class="fas fa-exclamation-triangle me-1"></i>Unsaved
+            <button type="button" class="btn btn-sm btn-link text-dark p-0 ms-1" onclick="handleRevertClick(event, '${automationId}')" title="Revert all changes">
+                <i class="fas fa-undo"></i>
+            </button>
+        `;
+        header.querySelector('h5').appendChild(indicator);
+    }
+}
+
+function updateSaveButtonVisibility(automationId) {
+    // Find or create save button for this automation
+    let saveButton = document.getElementById(`save_automation_${automationId}`);
+
+    if (!saveButton) {
+        // Create save button if it doesn't exist
+        const automationContent = document.getElementById(`automation-content-${automationId}`);
+        if (automationContent) {
+            const buttonContainer = document.createElement('div');
+            buttonContainer.className = 'text-end mt-3 mb-3';
+            buttonContainer.innerHTML = `
+                <button type="button" class="btn btn-primary btn-sm" id="save_automation_${automationId}" onclick="saveAutomation('${automationId}')" style="display: none;">
+                    <i class="fas fa-save me-1"></i>Save Changes
+                </button>
+            `;
+            automationContent.appendChild(buttonContainer);
+            saveButton = document.getElementById(`save_automation_${automationId}`);
+        }
+    }
+
+    // Show/hide save button based on modified state
+    if (saveButton) {
+        if (window.modifiedAutomations && window.modifiedAutomations.has(automationId)) {
+            saveButton.style.display = 'inline-block';
+        } else {
+            saveButton.style.display = 'none';
+        }
+    }
+}
+
+function saveAutomation(automationId) {
+    // First validate rule configuration
+    const validationError = validateCompleteRuleConfiguration(automationId);
+    if (validationError) {
+        showToast(`Cannot save: ${validationError}`, 'error');
+        return;
+    }
+
+    // Collect automation data
+    const automationData = {
+        name: document.getElementById(`name_${automationId}`)?.value || '',
+        crm_label_id: document.getElementById(`crm_label_${automationId}`)?.value || '',
+        enabled: document.getElementById(`enabled_${automationId}`)?.checked || false,
+        applicable_destinations: [],
+        assignment_logic: 'base_user'
+    };
+
+    // Collect destination groups
+    const destinationCheckboxes = document.querySelectorAll(`input[id^="group_${automationId}_"]:checked`);
+    automationData.applicable_destinations = Array.from(destinationCheckboxes).map(cb => cb.value);
+
+    // Collect assignment logic
+    const baseUserRadio = document.getElementById(`logic_base_user_${automationId}`);
+    const distributionRadio = document.getElementById(`logic_distribution_${automationId}`);
+    if (baseUserRadio?.checked) {
+        automationData.assignment_logic = 'base_user';
+    } else if (distributionRadio?.checked) {
+        automationData.assignment_logic = 'distribution';
+    }
+
+    // Collect rules
+    const rulesContainer = document.getElementById(`rules_container_${automationId}`);
+    const ruleElements = rulesContainer.querySelectorAll('.rule-item');
+
+    ruleElements.forEach((ruleElement, index) => {
+        const ruleNum = index + 1;
+        const typeElement = ruleElement.querySelector(`#rule${ruleNum}_type_${automationId}`);
+        const valueElement = ruleElement.querySelector(`#rule${ruleNum}_value_${automationId}`);
+
+        if (typeElement && valueElement && valueElement.value.trim()) {
+            automationData[`rule${ruleNum}_type`] = typeElement.value;
+            automationData[`rule${ruleNum}_value`] = valueElement.value.trim();
+        }
+    });
+
+    // Send save request
+    fetch('/automations/update', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            id: automationId,
+            field: 'all',
+            value: automationData
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Clear modified state
+            if (window.modifiedAutomations && window.modifiedAutomations.has(automationId)) {
+                window.modifiedAutomations.delete(automationId);
+                updateSaveButtonVisibility(automationId);
+
+                // Remove unsaved indicator
+                const indicator = document.querySelector(`.automation-header:has(input[id="enabled_${automationId}"]) .unsaved-indicator`) ||
+                                document.querySelector(`input[id="enabled_${automationId}"]`).closest('.automation-header').querySelector('.unsaved-indicator');
+                if (indicator) {
+                    indicator.remove();
+                }
+            }
+            showToast(`Automation ${automationId} saved successfully`, 'success');
+        } else {
+            showToast('Error saving automation', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('Error saving automation', 'error');
+    });
+}
+
+function handleRevertClick(event, automationId) {
+    // Prevent the event from bubbling up to the header
+    event.preventDefault();
+    event.stopPropagation();
+
+    // Call the revert function
+    revertAutomation(automationId);
+}
+
+function handleAssignmentChange(automationId, selectedValue) {
+    // Mark automation as modified instead of saving immediately
+    markAutomationAsModified(automationId);
+
+    // Show only the selected method
+    showSelectedAssignment(automationId, selectedValue);
+}
+
+function showSelectedAssignment(automationId, selectedValue) {
+    const buttonsContainer = document.getElementById(`assignment_buttons_${automationId}`);
+    const selectedContainer = document.getElementById(`selected_assignment_${automationId}`);
+    const selectedMethodButton = document.getElementById(`selected_method_button_${automationId}`);
+    const selectedMethodSpan = document.getElementById(`selected_method_${automationId}`);
+
+    // Hide the buttons
+    buttonsContainer.style.display = 'none';
+
+    // Show the selected method
+    selectedContainer.style.display = 'block';
+
+    // Update the button class and display text
+    const methodName = selectedValue === 'base_user' ? 'Base-User' : 'Distribution';
+    const methodIcon = selectedValue === 'base_user' ? 'fas fa-user-check' : 'fas fa-balance-scale';
+    const buttonClass = selectedValue === 'base_user' ? 'btn btn-outline-primary btn-sm text-start' : 'btn btn-outline-success btn-sm text-start';
+
+    // Update button class
+    selectedMethodButton.className = buttonClass;
+
+    // Update the display text
+    selectedMethodSpan.innerHTML = `
+        <i class="${methodIcon} me-2"></i>
+        ${methodName}
+    `;
+}
+
+function showAssignmentOptions(automationId) {
+    const buttonsContainer = document.getElementById(`assignment_buttons_${automationId}`);
+    const selectedContainer = document.getElementById(`selected_assignment_${automationId}`);
+
+    // Hide the selected method display
+    selectedContainer.style.display = 'none';
+
+    // Show the buttons
+    buttonsContainer.style.display = 'block';
+}
+
+function initializeAssignmentDisplay(automationId, automation) {
+    const selectedValue = automation.assignment_logic || 'base_user';
+
+    // Check if a method is already selected
+    const baseUserRadio = document.getElementById(`logic_base_user_${automationId}`);
+    const distributionRadio = document.getElementById(`logic_distribution_${automationId}`);
+
+    if (baseUserRadio.checked || distributionRadio.checked) {
+        showSelectedAssignment(automationId, selectedValue);
+    }
+}
+
+function createNewAutomation() {
+    // Find the next available automation ID
+    const existingCards = document.querySelectorAll('.automation-card');
+    let nextId = 1;
+
+    existingCards.forEach(card => {
+        const automationId = card.querySelector('input[id^="enabled_"]').id.replace('enabled_', '');
+        const numId = parseInt(automationId);
+        if (numId >= nextId) {
+            nextId = numId + 1;
+        }
+    });
+
+    const newAutomationId = nextId.toString();
+
+    // Create the new automation data
+    const newAutomationData = {
+        name: '',
+        crm_label_id: '',
+        enabled: false,
+        applicable_destinations: [],
+        assignment_logic: 'base_user',
+        rule1_type: 'starts_with',
+        rule1_value: ''
+    };
+
+    // Send request to create new automation
+    fetch('/automations/create', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            id: newAutomationId,
+            automation: newAutomationData
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Add the new automation to the page without reloading
+            addNewAutomationToPage(newAutomationId, newAutomationData);
+        } else {
+            showToast('Error creating new automation: ' + (data.error || 'Unknown error'), 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('Error creating new automation', 'error');
+    });
+}
+
+function addNewAutomationToPage(automationId, automationData) {
+    // Generate HTML for the new automation
+    const automationHtml = generateAutomationHtml(automationId, automationData);
+
+    // Find the container for automations (before the "Create New Automation" button)
+    const createButton = document.querySelector('.text-center.mt-4.mb-4');
+    if (createButton) {
+        // Insert the new automation before the create button
+        createButton.insertAdjacentHTML('beforebegin', automationHtml);
+
+        // Initialize the new automation
+        initializeNewAutomation(automationId, automationData);
+
+        // Scroll to the new automation immediately (no smooth scrolling to avoid jumping)
+        setTimeout(() => {
+            const newAutomationElement = document.querySelector(`.automation-card:has(input[id="enabled_${automationId}"])`);
+            if (!newAutomationElement) {
+                // Fallback selector
+                const enabledInput = document.querySelector(`input[id="enabled_${automationId}"]`);
+                if (enabledInput) {
+                    newAutomationElement = enabledInput.closest('.automation-card');
+                }
+            }
+
+            if (newAutomationElement) {
+                // Scroll immediately to the new automation
+                newAutomationElement.scrollIntoView({
+                    behavior: 'auto', // Use 'auto' for immediate scroll, no smooth animation
+                    block: 'start'
+                });
+
+                // Ensure the automation is expanded (force show if needed)
+                const collapseElement = document.getElementById(`automation-content-${automationId}`);
+                if (collapseElement && !collapseElement.classList.contains('show')) {
+                    const bsCollapse = new bootstrap.Collapse(collapseElement, {
+                        show: true
+                    });
+                }
+
+                // Highlight the new automation with a blue background
+                newAutomationElement.style.transition = 'background-color 0.3s';
+                newAutomationElement.style.backgroundColor = '#e3f2fd'; // Light blue highlight
+                setTimeout(() => {
+                    newAutomationElement.style.backgroundColor = '';
+                }, 2000); // Remove highlight after 2 seconds
+            }
+        }, 100);
+
+        showToast(`Automation ${automationId} created successfully`, 'success');
+    }
+}
+
+function generateAutomationHtml(automationId, automationData) {
+    let destinationGroupsHtml = '';
+
+    if (window.destinationGroupsData) {
+        Object.entries(window.destinationGroupsData).forEach(([groupId, group]) => {
+            const isChecked = automationData.applicable_destinations.includes(groupId) ? 'checked' : '';
+            const destCount = group.destination_ids ? group.destination_ids.length : 0;
+            const empCount = group.employee_ids ? group.employee_ids.length : 0;
+
+            destinationGroupsHtml += `
+                <div class="form-check destination-checkbox">
+                    <input class="form-check-input" type="checkbox"
+                           id="group_${automationId}_${groupId}"
+                           value="${groupId}"
+                           ${isChecked}
+                           onchange="updateDestinations('${automationId}')">
+                    <label class="form-check-label" for="group_${automationId}_${groupId}">
+                        ${group.name} (${destCount} destinations, ${empCount} employees)
+                    </label>
+                </div>
+            `;
+        });
+    }
+
+    // Generate CRM labels HTML dynamically for this automation
+    let crmLabelsHtml = `
+        <li>
+            <div class="d-flex justify-content-center mx-2 my-2">
+                <div class="input-group" style="max-width: 280px;">
+                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                    <input type="text" class="form-control" placeholder="Search labels..."
+                           id="crmLabelSearch_${automationId}">
+                    <button class="btn btn-outline-secondary" type="button"
+                            onclick="clearCrmLabelSearch('${automationId}', event)"
+                            title="Clear search">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+        </li>
+        <li><hr class="dropdown-divider"></li>
+        <li>
+            <a class="dropdown-item" href="#" onclick="selectCrmLabel('${automationId}', '', 'Select CRM Label...')">
+                <em class="text-muted">Clear selection</em>
+            </a>
+        </li>
+    `;
+
+    // Add CRM labels dynamically from the global crmLabelsData
+    if (window.crmLabelsData && Array.isArray(window.crmLabelsData)) {
+        window.crmLabelsData.forEach(function(label) {
+            if (label.active !== false) {  // Default to active if not specified
+                crmLabelsHtml += `
+                    <li>
+                        <a class="dropdown-item crm-label-item" href="#"
+                           onclick="selectCrmLabel('${automationId}', '${label.id.replace(/'/g, "\\'")}', '${label.name.replace(/'/g, "\\'")}')"
+                           data-name="${label.name.toLowerCase()}"
+                           data-id="${label.id}">
+                            ${label.name}
+                        </a>
+                    </li>
+                `;
+            }
+        });
+    }
+
+    return `
+    <div class="automation-card">
+        <div class="automation-header d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#automation-content-${automationId}" aria-expanded="true" style="cursor: pointer;">
+            <h5 class="mb-0">
+                <i class="fas fa-chevron-down me-2" id="chevron-${automationId}"></i>
+                Automation ${automationId}
+                <span class="badge bg-secondary status-badge">Disabled</span>
+            </h5>
+            <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox"
+                       id="enabled_${automationId}"
+                       onchange="updateAutomation('${automationId}', 'enabled', this.checked); event.stopPropagation();">
+                <label class="form-check-label" for="enabled_${automationId}">
+                    Disabled
+                </label>
+            </div>
+        </div>
+
+        <div id="automation-content-${automationId}" class="collapse show p-3">
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label for="name_${automationId}" class="form-label">
+                            <i class="fas fa-tag me-1"></i>Automation Name
+                        </label>
+                        <input type="text" class="form-control" id="name_${automationId}"
+                               value="${automationData.name || ''}"
+                               onchange="updateAutomation('${automationId}', 'name', this.value)"
+                               placeholder="Enter automation name (e.g., 'Je reisplan xyz is klaar')">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label for="crm_label_${automationId}" class="form-label">
+                            <i class="fas fa-id-card me-1"></i>CRM Label
+                        </label>
+                        <div class="dropdown">
+                            <button class="btn btn-outline-secondary dropdown-toggle w-100 text-start" type="button"
+                                    id="crmLabelDropdown_${automationId}" data-bs-toggle="dropdown">
+                                <span id="crmLabelText_${automationId}">Select CRM Label...</span>
+                            </button>
+                            <ul class="dropdown-menu w-100" id="crmLabelDropdownMenu_${automationId}" style="max-height: 300px; overflow-y: auto;">
+                                ${crmLabelsHtml}
+                            </ul>
+                        </div>
+                        <input type="hidden" id="crm_label_${automationId}" value="${automationData.crm_label_id || ''}">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label class="form-label">
+                            <i class="fas fa-envelope me-1"></i>Email Assignment
+                            <button type="button" class="btn btn-link btn-sm p-0 ms-2" onclick="showAssignmentHelp()">
+                                <i class="fas fa-question-circle"></i>
+                            </button>
+                            <button type="button" class="btn btn-outline-danger btn-sm p-0 ms-2" onclick="confirmDeleteAutomation('${automationId}')" title="Delete this automation">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </label>
+                        <div class="assignment-container" style="min-height: 70px;">
+                            <div class="assignment-buttons" id="assignment_buttons_${automationId}" style="width: 150px;">
+                                <div class="btn-group-vertical w-100 btn-group-sm" role="group">
+                                    <input type="radio" class="btn-check" id="logic_base_user_${automationId}"
+                                           name="assignment_logic_${automationId}"
+                                           value="base_user"
+                                           ${(!automationData.assignment_logic || automationData.assignment_logic === 'base_user') ? 'checked' : ''}
+                                           onchange="handleAssignmentChange('${automationId}', this.value)">
+                                    <label class="btn btn-outline-primary btn-sm text-start" for="logic_base_user_${automationId}">
+                                        <i class="fas fa-user-check me-2"></i>Base-User
+                                    </label>
+
+                                    <input type="radio" class="btn-check" id="logic_distribution_${automationId}"
+                                           name="assignment_logic_${automationId}"
+                                           value="distribution"
+                                           ${automationData.assignment_logic === 'distribution' ? 'checked' : ''}
+                                           onchange="handleAssignmentChange('${automationId}', this.value)">
+                                    <label class="btn btn-outline-success btn-sm text-start" for="logic_distribution_${automationId}">
+                                        <i class="fas fa-balance-scale me-2"></i>Distribution
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="selected-assignment" id="selected_assignment_${automationId}" style="display: none;">
+                                <button type="button" class="btn btn-sm text-start" id="selected_method_button_${automationId}" onclick="showAssignmentOptions('${automationId}')" style="width: 150px; text-align: left;">
+                                    <span id="selected_method_${automationId}"></span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">
+                    <i class="fas fa-filter me-1"></i>Email Filtering Rules
+                </label>
+                <div class="border rounded p-3">
+                    <div id="rules_container_${automationId}" class="rules-container row g-3">
+                        <div class="rule-item col-md-4">
+                            <label class="form-label small">Subject Rule 1</label>
+                            <div class="input-group">
+                                <select class="form-select" id="rule1_type_${automationId}"
+                                        onchange="validateAndUpdateRule('${automationId}', 1, 'rule1_type', this.value)">
+                                    <option value="starts_with" selected>Starts with</option>
+                                    <option value="ends_with">Ends with</option>
+                                    <option value="contains">Contains</option>
+                                </select>
+                                <input type="text" class="form-control" id="rule1_value_${automationId}"
+                                       value="${automationData.rule1_value || ''}"
+                                       placeholder="Enter text..."
+                                       onchange="updateRule('${automationId}', 'rule1_value', this.value)">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="text-center mt-3">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="addRule('${automationId}')" id="add_rule_btn_${automationId}">
+                            <i class="fas fa-plus me-1"></i>Add Rule
+                        </button>
+                    </div>
+
+                    <div class="form-text">
+                        <small class="text-muted">
+                            Configure rules to filter emails by subject. Empty rules are ignored.
+                        </small>
+                        <div id="ruleSummary_${automationId}" class="mt-2">
+                            <div class="text-primary fw-bold fs-6" id="ruleSummaryText_${automationId}"></div>
+                        </div>
+                        <button type="button" class="btn btn-link btn-sm p-0 ms-2" onclick="showRuleHelp()">
+                            <i class="fas fa-question-circle"></i> How do rules work?
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">
+                    <i class="fas fa-layer-group me-1"></i>Applicable Destination Groups
+                </label>
+                <div class="border rounded p-3" style="max-height: 200px; overflow-y: auto;">
+                    ${destinationGroupsHtml}
+                </div>
+                <div class="form-text">
+                    Selected 0 destination group(s)
+                </div>
+            </div>
+        </div>
+    </div>
+    `;
+}
+
+function initializeNewAutomation(automationId, automationData) {
+    // Initialize collapse functionality
+    const header = document.querySelector(`.automation-header[data-bs-target="#automation-content-${automationId}"]`);
+    const collapseElement = document.getElementById(`automation-content-${automationId}`);
+    const chevronIcon = document.getElementById(`chevron-${automationId}`);
+
+    if (header && collapseElement) {
+        collapseElement.addEventListener('show.bs.collapse', function() {
+            if (chevronIcon) {
+                chevronIcon.className = 'fas fa-chevron-down me-2';
+            }
+            saveCollapseState(automationId, false);
+        });
+
+        collapseElement.addEventListener('hide.bs.collapse', function() {
+            if (chevronIcon) {
+                chevronIcon.className = 'fas fa-chevron-right me-2';
+            }
+            saveCollapseState(automationId, true);
+        });
+    }
+
+    // Initialize CRM label search
+    const searchInput = document.getElementById(`crmLabelSearch_${automationId}`);
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            filterCrmLabels(automationId);
+        });
+        searchInput.addEventListener('keyup', function(event) {
+            if (event.key === 'Escape') {
+                clearCrmLabelSearch(automationId);
+            } else if (event.key === 'Enter') {
+                const dropdown = bootstrap.Dropdown.getInstance(document.getElementById(`crmLabelDropdown_${automationId}`));
+                if (dropdown) {
+                    dropdown.hide();
+                }
+            }
+        });
+    }
+
+    // Initialize rules
+    initializeRules(automationId, automationData);
+
+    // Initialize assignment display
+    initializeAssignmentDisplay(automationId, automationData);
+}
+
+
+
+function saveCollapseState(automationId, isCollapsed) {
+    try {
+        const collapseStates = JSON.parse(localStorage.getItem('automationCollapseStates') || '{}');
+        collapseStates[automationId] = isCollapsed;
+        localStorage.setItem('automationCollapseStates', JSON.stringify(collapseStates));
+    } catch (error) {
+        console.warn('Failed to save collapse state:', error);
+    }
+}
+
+function getCollapseState(automationId) {
+    try {
+        const collapseStates = JSON.parse(localStorage.getItem('automationCollapseStates') || '{}');
+        return collapseStates[automationId] || false; // Default to expanded (false = not collapsed)
+    } catch (error) {
+        console.warn('Failed to get collapse state:', error);
+        return false;
+    }
+}
+
+function restoreCollapseStates() {
+    document.querySelectorAll('.automation-header[data-bs-toggle="collapse"]').forEach(function(header) {
+        const automationId = header.querySelector('input[id^="enabled_"]').id.replace('enabled_', '');
+        const collapseElement = document.getElementById(`automation-content-${automationId}`);
+        const chevronIcon = document.getElementById(`chevron-${automationId}`);
+
+        const shouldBeCollapsed = getCollapseState(automationId);
+
+        if (shouldBeCollapsed) {
+            // Collapse the element
+            const bsCollapse = new bootstrap.Collapse(collapseElement, {
+                hide: true
+            });
+            if (chevronIcon) {
+                chevronIcon.className = 'fas fa-chevron-right me-2';
+            }
+        } else {
+            // For new automations or automations that should be expanded,
+            // don't force show - let Bootstrap handle the initial state
+            // Only update the chevron icon
+            if (chevronIcon) {
+                chevronIcon.className = 'fas fa-chevron-down me-2';
+            }
+        }
+    });
+}
+
+function confirmDeleteAutomation(automationId) {
+    // Get automation name for the confirmation message
+    const nameInput = document.getElementById(`name_${automationId}`);
+    const automationName = nameInput && nameInput.value.trim() ? nameInput.value.trim() : `Automation ${automationId}`;
+
+    // Create confirmation modal
+    const modal = document.createElement('div');
+    modal.className = 'modal fade';
+    modal.id = 'deleteConfirmationModal';
+    modal.setAttribute('tabindex', '-1');
+    modal.innerHTML = `
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Delete Automation
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Are you sure you want to delete "${automationName}"?</strong>
+                    </div>
+                    <p class="mb-0">This action cannot be undone. The automation will be permanently removed and all remaining automations will be renumbered.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i>Cancel
+                    </button>
+                    <button type="button" class="btn btn-danger" onclick="deleteAutomation('${automationId}')">
+                        <i class="fas fa-trash-alt me-1"></i>Yes, Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Show the modal
+    const modalInstance = new bootstrap.Modal(modal);
+    modalInstance.show();
+
+    // Clean up when modal is hidden
+    modal.addEventListener('hidden.bs.modal', function() {
+        modal.remove();
+    });
+}
+
+function deleteAutomation(automationId) {
+    // Close the confirmation modal
+    const modal = document.getElementById('deleteConfirmationModal');
+    if (modal) {
+        const modalInstance = bootstrap.Modal.getInstance(modal);
+        if (modalInstance) {
+            modalInstance.hide();
+        }
+    }
+
+    // Track this automation as deleted for Save All Changes
+    window.deletedAutomations.add(automationId);
+
+    // Immediately remove from DOM for instant visual feedback (optimistic UI)
+    // Use fallback selector first since :has() might not be supported in all browsers
+    let automationElement = null;
+    const enabledInput = document.querySelector(`input[id="enabled_${automationId}"]`);
+    if (enabledInput) {
+        automationElement = enabledInput.closest('.automation-card');
+    }
+
+    // Fallback: try to find by data attribute or other means
+    if (!automationElement) {
+        // Try finding by header text
+        const headers = document.querySelectorAll('.automation-header h5');
+        for (const header of headers) {
+            if (header.textContent.includes(`Automation ${automationId}`)) {
+                automationElement = header.closest('.automation-card');
+                break;
+            }
+        }
+    }
+
+    let elementRemoved = false;
+    if (automationElement) {
+        // Add fade-out animation
+        automationElement.style.transition = 'opacity 0.2s ease-out';
+        automationElement.style.opacity = '0';
+
+        // Remove after animation
+        setTimeout(() => {
+            automationElement.remove();
+            // Renumber remaining automations immediately
+            renumberAutomationsInDOM();
+            elementRemoved = true;
+        }, 200);
+    }
+
+    // Clear collapse state from localStorage immediately
+    try {
+        const collapseStates = JSON.parse(localStorage.getItem('automationCollapseStates') || '{}');
+        delete collapseStates[automationId];
+        localStorage.setItem('automationCollapseStates', JSON.stringify(collapseStates));
+    } catch (error) {
+        console.warn('Failed to clear collapse state:', error);
+    }
+
+    // Show immediate success feedback
+    showToast(`Automation ${automationId} deleted successfully`, 'success');
+
+    // Send delete request to backend (async, doesn't block UI)
+    fetch(`/automations/delete/${automationId}`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            console.log(`Backend confirmed deletion of automation ${automationId}`);
+        } else {
+            console.error('Backend deletion failed:', data.error);
+            // If backend fails but we already removed from DOM, show error but don't restore
+            showToast('Warning: Backend deletion failed, but automation removed from view', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Network error during deletion:', error);
+        // If network fails but we already removed from DOM, show error but don't restore
+        showToast('Warning: Network error, but automation removed from view', 'error');
+    });
+}
+
+function renumberAutomationsInDOM() {
+    // Get all remaining automation cards
+    const automationCards = document.querySelectorAll('.automation-card');
+    const automationMap = new Map();
+
+    // First pass: collect current IDs and their elements
+    automationCards.forEach(card => {
+        const enabledInput = card.querySelector('input[id^="enabled_"]');
+        if (enabledInput) {
+            const currentId = enabledInput.id.replace('enabled_', '');
+            automationMap.set(currentId, card);
+        }
+    });
+
+    // Sort the IDs numerically
+    const sortedIds = Array.from(automationMap.keys()).sort((a, b) => parseInt(a) - parseInt(b));
+
+    // Second pass: renumber the automations
+    sortedIds.forEach((oldId, index) => {
+        const newId = (index + 1).toString();
+        const card = automationMap.get(oldId);
+
+        if (oldId !== newId) {
+            // Update all IDs and references within this automation
+            updateAutomationIds(card, oldId, newId);
+        }
+    });
+}
+
+function updateAutomationIds(card, oldId, newId) {
+    // Update header text
+    const header = card.querySelector('.automation-header h5');
+    if (header) {
+        header.innerHTML = header.innerHTML.replace(`Automation ${oldId}`, `Automation ${newId}`);
+    }
+
+    // Update chevron ID
+    const chevron = card.querySelector(`#chevron-${oldId}`);
+    if (chevron) {
+        chevron.id = `chevron-${newId}`;
+    }
+
+    // Update collapse target
+    const headerElement = card.querySelector('.automation-header');
+    if (headerElement) {
+        const toggleAttr = headerElement.getAttribute('data-bs-target');
+        if (toggleAttr) {
+            headerElement.setAttribute('data-bs-target', toggleAttr.replace(oldId, newId));
+        }
+    }
+
+    // Update collapse content ID
+    const collapseContent = card.querySelector(`#automation-content-${oldId}`);
+    if (collapseContent) {
+        collapseContent.id = `automation-content-${newId}`;
+    }
+
+    // Update all form element IDs
+    const elementsToUpdate = [
+        'enabled_', 'name_', 'crm_label_', 'crmLabelDropdown_', 'crmLabelText_',
+        'crmLabelDropdownMenu_', 'crmLabelSearch_', 'logic_base_user_',
+        'logic_distribution_', 'assignment_buttons_', 'selected_assignment_',
+        'selected_method_button_', 'selected_method_', 'rules_container_',
+        'add_rule_btn_', 'ruleSummary_', 'ruleSummaryText_'
+    ];
+
+    elementsToUpdate.forEach(prefix => {
+        const element = card.querySelector(`#${prefix}${oldId}`);
+        if (element) {
+            element.id = `${prefix}${newId}`;
+        }
+    });
+
+    // Update rule elements (rule1_, rule2_, rule3_)
+    for (let i = 1; i <= 3; i++) {
+        const ruleTypeElement = card.querySelector(`#rule${i}_type_${oldId}`);
+        const ruleValueElement = card.querySelector(`#rule${i}_value_${oldId}`);
+
+        if (ruleTypeElement) {
+            ruleTypeElement.id = `rule${i}_type_${newId}`;
+            ruleTypeElement.setAttribute('onchange', `validateAndUpdateRule('${newId}', ${i}, 'rule${i}_type', this.value)`);
+        }
+        if (ruleValueElement) {
+            ruleValueElement.id = `rule${i}_value_${newId}`;
+            ruleValueElement.setAttribute('onchange', `updateRule('${newId}', 'rule${i}_value', this.value)`);
+        }
+    }
+
+    // Update destination group checkboxes
+    const destinationCheckboxes = card.querySelectorAll('input[id^="group_"]');
+    destinationCheckboxes.forEach(checkbox => {
+        const currentId = checkbox.id;
+        const newCheckboxId = currentId.replace(`group_${oldId}_`, `group_${newId}_`);
+        checkbox.id = newCheckboxId;
+
+        // Update the label's 'for' attribute
+        const label = card.querySelector(`label[for="${currentId}"]`);
+        if (label) {
+            label.setAttribute('for', newCheckboxId);
+        }
+
+        // Update onchange handler
+        checkbox.setAttribute('onchange', `updateDestinations('${newId}')`);
+    });
+
+    // Update all onclick handlers that reference the old ID
+    const elementsWithOnclick = card.querySelectorAll('[onclick*="confirmDeleteAutomation"], [onclick*="showAssignmentHelp"], [onclick*="addRule"], [onclick*="showRuleHelp"], [onclick*="selectCrmLabel"], [onclick*="clearCrmLabelSearch"], [onclick*="deleteRule"]');
+    elementsWithOnclick.forEach(element => {
+        const onclickValue = element.getAttribute('onclick');
+        if (onclickValue) {
+            element.setAttribute('onclick', onclickValue.replace(new RegExp(oldId, 'g'), newId));
+        }
+    });
+
+    // Update event listeners for CRM label search
+    const searchInput = card.querySelector(`#crmLabelSearch_${newId}`);
+    if (searchInput) {
+        // Remove old event listeners
+        const newSearchInput = searchInput.cloneNode(true);
+        searchInput.parentNode.replaceChild(newSearchInput, searchInput);
+
+        // Add new event listeners
+        newSearchInput.addEventListener('input', function() {
+            filterCrmLabels(newId);
+        });
+        newSearchInput.addEventListener('keyup', function(event) {
+            if (event.key === 'Escape') {
+                clearCrmLabelSearch(newId);
+            } else if (event.key === 'Enter') {
+                const dropdown = bootstrap.Dropdown.getInstance(document.getElementById(`crmLabelDropdown_${newId}`));
+                if (dropdown) {
+                    dropdown.hide();
+                }
+            }
+        });
+    }
+
+    // Clear any modified state for the old ID and transfer to new ID
+    if (window.modifiedAutomations && window.modifiedAutomations.has(oldId)) {
+        window.modifiedAutomations.delete(oldId);
+        window.modifiedAutomations.add(newId);
+        updateSaveButtonVisibility(newId);
+    }
+}
+
+function getCurrentAutomationState(automationId) {
+    // Collect the current state of all form fields for this automation
+    const state = {
+        name: document.getElementById(`name_${automationId}`)?.value || '',
+        crm_label_id: document.getElementById(`crm_label_${automationId}`)?.value || '',
+        crm_label_text: document.getElementById(`crmLabelText_${automationId}`)?.textContent || '',
+        enabled: document.getElementById(`enabled_${automationId}`)?.checked || false,
+        applicable_destinations: [],
+        assignment_logic: 'base_user',
+        rules: []
+    };
+
+    // Collect destination groups
+    const destinationCheckboxes = document.querySelectorAll(`input[id^="group_${automationId}_"]:checked`);
+    state.applicable_destinations = Array.from(destinationCheckboxes).map(cb => cb.value);
+
+    // Collect assignment logic
+    const baseUserRadio = document.getElementById(`logic_base_user_${automationId}`);
+    const distributionRadio = document.getElementById(`logic_distribution_${automationId}`);
+    if (baseUserRadio?.checked) {
+        state.assignment_logic = 'base_user';
+    } else if (distributionRadio?.checked) {
+        state.assignment_logic = 'distribution';
+    }
+
+    // Collect rules
+    const rulesContainer = document.getElementById(`rules_container_${automationId}`);
+    const ruleElements = rulesContainer.querySelectorAll('.rule-item');
+
+    ruleElements.forEach((ruleElement, index) => {
+        const ruleNum = index + 1;
+        const typeElement = ruleElement.querySelector(`#rule${ruleNum}_type_${automationId}`);
+        const valueElement = ruleElement.querySelector(`#rule${ruleNum}_value_${automationId}`);
+
+        if (typeElement && valueElement) {
+            state.rules.push({
+                num: ruleNum,
+                type: typeElement.value,
+                value: valueElement.value.trim()
+            });
+        }
+    });
+
+    return state;
+}
+
+function revertAutomation(automationId) {
+    // Check if we have an original state stored
+    if (!window.originalStates || !window.originalStates[automationId]) {
+        showToast('No original state to revert to', 'error');
+        return;
+    }
+
+    const originalState = window.originalStates[automationId];
+
+    // Revert all form fields to their original state
+    const nameInput = document.getElementById(`name_${automationId}`);
+    if (nameInput) nameInput.value = originalState.name;
+
+    const crmLabelInput = document.getElementById(`crm_label_${automationId}`);
+    if (crmLabelInput) crmLabelInput.value = originalState.crm_label_id;
+
+    const crmLabelText = document.getElementById(`crmLabelText_${automationId}`);
+    if (crmLabelText) crmLabelText.textContent = originalState.crm_label_text;
+
+    const enabledCheckbox = document.getElementById(`enabled_${automationId}`);
+    if (enabledCheckbox) {
+        enabledCheckbox.checked = originalState.enabled;
+        // Update the badge and label
+        const badge = enabledCheckbox.closest('.automation-header').querySelector('.status-badge');
+        const label = document.querySelector(`[for="enabled_${automationId}"]`);
+
+        if (originalState.enabled) {
+            if (badge) badge.className = 'badge bg-success status-badge';
+            if (badge) badge.textContent = 'Enabled';
+            if (label) label.textContent = 'Enabled';
+        } else {
+            if (badge) badge.className = 'badge bg-secondary status-badge';
+            if (badge) badge.textContent = 'Disabled';
+            if (label) label.textContent = 'Disabled';
+        }
+    }
+
+    // Revert destination groups
+    const allDestinationCheckboxes = document.querySelectorAll(`input[id^="group_${automationId}_"]`);
+    allDestinationCheckboxes.forEach(checkbox => {
+        const groupId = checkbox.value;
+        checkbox.checked = originalState.applicable_destinations.includes(groupId);
+    });
+
+    // Update destination count
+    const countElement = document.querySelector(`input[id^="group_${automationId}_"]`).closest('.mb-3').querySelector('.form-text');
+    if (countElement) {
+        countElement.textContent = `Selected ${originalState.applicable_destinations.length} destination group(s)`;
+    }
+
+    // Revert assignment logic
+    const baseUserRadio = document.getElementById(`logic_base_user_${automationId}`);
+    const distributionRadio = document.getElementById(`logic_distribution_${automationId}`);
+
+    if (baseUserRadio && distributionRadio) {
+        if (originalState.assignment_logic === 'base_user') {
+            baseUserRadio.checked = true;
+            distributionRadio.checked = false;
+        } else {
+            baseUserRadio.checked = false;
+            distributionRadio.checked = true;
+        }
+
+        // Update the display
+        showSelectedAssignment(automationId, originalState.assignment_logic);
+    }
+
+    // Revert rules
+    const rulesContainer = document.getElementById(`rules_container_${automationId}`);
+
+    // Clear existing rules
+    rulesContainer.innerHTML = '';
+
+    // Recreate rules from original state
+    if (originalState.rules.length === 0) {
+        // Add default rule if no rules exist
+        const defaultRule = createRuleElement(automationId, 1, 'starts_with', '');
+        rulesContainer.appendChild(defaultRule);
+    } else {
+        originalState.rules.forEach(rule => {
+            const ruleElement = createRuleElement(automationId, rule.num, rule.type, rule.value);
+            rulesContainer.appendChild(ruleElement);
+        });
+    }
+
+    // Update rule summary
+    updateRuleSummary(automationId);
+
+    // Update add button visibility
+    updateAddButtonVisibility(automationId);
+
+    // Clear modified state and remove visual indicators
+    if (window.modifiedAutomations && window.modifiedAutomations.has(automationId)) {
+        window.modifiedAutomations.delete(automationId);
+        updateSaveButtonVisibility(automationId);
+
+        // Remove unsaved indicator
+        const indicator = document.querySelector(`.automation-header:has(input[id="enabled_${automationId}"]) .unsaved-indicator`) ||
+                        document.querySelector(`input[id="enabled_${automationId}"]`).closest('.automation-header').querySelector('.unsaved-indicator');
+        if (indicator) {
+            indicator.remove();
+        }
+    }
+
+    // Clear the original state since we've reverted
+    if (window.originalStates) {
+        delete window.originalStates[automationId];
+    }
+
+    showToast(`Automation ${automationId} reverted to original state`, 'success');
+}
+
+function showToast(message, type) {
+    // Simple toast notification
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type === 'success' ? 'success' : 'danger'} position-fixed`;
+    toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    toast.innerHTML = `
+        <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'} me-2"></i>
+        ${message}
+        <button type="button" class="btn-close float-end" onclick="this.parentElement.remove()"></button>
+    `;
+
+    document.body.appendChild(toast);
+
+    // Auto remove after 3 seconds
+    setTimeout(() => {
+        if (toast.parentElement) {
+            toast.remove();
+        }
+    }, 3000);
+}
+</script>
+{% endblock %}

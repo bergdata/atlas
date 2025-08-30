@@ -1,0 +1,14 @@
+{
+  "1": {
+    "name": "Vietnam",
+    "destination_ids": [
+      "93",
+      "111"
+    ],
+    "employee_ids": [
+      "5e246d96-0dc0-f08a-c874-3a1120e0d81f",
+      "ef64fbec-29b0-43e4-9cd0-7c6ad903934c"
+    ],
+    "created_at": "2025-08-29T20:40:29.172025"
+  }
+}

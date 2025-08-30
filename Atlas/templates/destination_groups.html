@@ -1,0 +1,802 @@
+{% extends "base.html" %}
+
+{% block title %}Destination Groups - Atlas Config{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-layer-group me-2"></i>Destination Groups</h2>
+        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createGroupModal">
+            <i class="fas fa-plus me-2"></i>Create Group
+        </button>
+    </div>
+
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i>
+        Create logical groups of destinations and assign employees to work on them. These groups will automatically generate destination configurations for your automation system.
+    </div>
+
+    <div class="row">
+        {% for group_id, group in groups.items() %}
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">{{ group.name }}</h5>
+                    <div>
+                        <button class="btn btn-sm btn-outline-primary me-2" onclick="editGroup('{{ group_id }}')">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteGroup('{{ group_id }}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-map-marker-alt me-2"></i>Destinations ({{ group.destination_ids|length }})</h6>
+                            <div class="mb-3">
+                                {% for dest_id in group.destination_ids %}
+                                    {% if dest_id in destinations %}
+                                        <span class="badge bg-primary me-1 mb-1">{{ destinations[dest_id].name }}</span>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-users me-2"></i>Assigned Employees ({{ group.employee_ids|length }})</h6>
+                            <div class="mb-3">
+                                {% for emp_id in group.employee_ids %}
+                                    {% if emp_id in employees %}
+                                        <span class="badge bg-success me-1 mb-1">{{ employees[emp_id].username }}</span>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-muted small">
+                        Created: {{ group.created_at[:10] if group.created_at else 'Unknown' }}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if not groups %}
+    <div class="text-center py-5">
+        <i class="fas fa-layer-group fa-3x text-muted mb-3"></i>
+        <h4 class="text-muted">No Destination Groups Yet</h4>
+        <p class="text-muted">Create your first destination group to get started with organizing your destinations and employees.</p>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createGroupModal">
+            <i class="fas fa-plus me-2"></i>Create Your First Group
+        </button>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Create Group Modal -->
+<div class="modal fade" id="createGroupModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Create Destination Group</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createGroupForm">
+                    <div class="mb-3">
+                        <label for="groupName" class="form-label">Group Name</label>
+                        <input type="text" class="form-control" id="groupName" placeholder="e.g., Vietnam Travel" required>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Select Destinations</h6>
+                            <div class="mb-2">
+                                <input type="text" class="form-control" id="destinationSearch" placeholder="Search destinations...">
+                            </div>
+                            <div class="border rounded p-3" style="max-height: 300px; overflow-y: auto;" id="destinationsList">
+                                {% for dest_id, dest in destinations.items() %}
+                                <div class="form-check destination-item" data-name="{{ dest.name|lower }}" data-country="{{ dest.country|lower }}">
+                                    <input class="form-check-input destination-checkbox" type="checkbox"
+                                           value="{{ dest_id }}" id="dest_{{ dest_id }}">
+                                    <label class="form-check-label" for="dest_{{ dest_id }}">
+                                        {{ dest.name }} ({{ dest.country }})
+                                    </label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            <div class="mt-2">
+                                <small class="text-muted">
+                                    <span id="selectedDestinationsCount">0</span> destinations selected
+                                </small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Select Employees</h6>
+                            <div class="mb-2">
+                                <input type="text" class="form-control" id="employeeSearch" placeholder="Search employees...">
+                            </div>
+                            <div class="border rounded p-3" style="max-height: 300px; overflow-y: auto;" id="employeesList">
+                                <!-- Selected employees will appear at the top -->
+                                <div id="selectedEmployeesContainer"></div>
+                                <!-- Unselected employees will appear below -->
+                                <div id="unselectedEmployeesContainer">
+                                    {% for emp_id, emp in employees.items() %}
+                                    <div class="form-check employee-item unselected-employee" data-name="{{ emp.username|lower }}" data-email="{{ emp.email|lower }}">
+                                        <input class="form-check-input employee-checkbox" type="checkbox"
+                                               value="{{ emp_id }}" id="emp_{{ emp_id }}">
+                                        <label class="form-check-label" for="emp_{{ emp_id }}">
+                                            {{ emp.username }} ({{ emp.email }})
+                                        </label>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="mt-2">
+                                <small class="text-muted">
+                                    <span id="selectedEmployeesCount">0</span> employees selected
+                                </small>
+                            </div>
+                            <div class="mt-2">
+                                <label class="form-label"><strong>Base User (select one):</strong></label>
+                                <div id="baseUserSelection" class="border rounded p-2" style="display: none;">
+                                    <!-- Base user radio buttons will be populated here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="createGroup()">Create Group</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Group Modal -->
+<div class="modal fade" id="editGroupModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Destination Group</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editGroupForm">
+                    <input type="hidden" id="editGroupId">
+                    <div class="mb-3">
+                        <label for="editGroupName" class="form-label">Group Name</label>
+                        <input type="text" class="form-control" id="editGroupName" required>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Select Destinations</h6>
+                            <div class="mb-2">
+                                <input type="text" class="form-control" id="editDestinationSearch" placeholder="Search destinations...">
+                            </div>
+                            <div class="border rounded p-3" style="max-height: 300px; overflow-y: auto;" id="editDestinationsList">
+                                <!-- Destinations will be loaded here -->
+                            </div>
+                            <div class="mt-2">
+                                <small class="text-muted">
+                                    <span id="editSelectedDestinationsCount">0</span> destinations selected
+                                </small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Select Employees</h6>
+                            <div class="mb-2">
+                                <input type="text" class="form-control" id="editEmployeeSearch" placeholder="Search employees...">
+                            </div>
+                            <div class="border rounded p-3" style="max-height: 300px; overflow-y: auto;" id="editEmployeesList">
+                                <!-- Selected employees will appear at the top -->
+                                <div id="editSelectedEmployeesContainer"></div>
+                                <!-- Unselected employees will appear below -->
+                                <div id="editUnselectedEmployeesContainer">
+                                    <!-- Employees will be loaded here -->
+                                </div>
+                            </div>
+                            <div class="mt-2">
+                                <small class="text-muted">
+                                    <span id="editSelectedEmployeesCount">0</span> employees selected
+                                </small>
+                            </div>
+                            <div class="mt-2">
+                                <label class="form-label"><strong>Base User (select one):</strong></label>
+                                <div id="editBaseUserSelection" class="border rounded p-2" style="display: none;">
+                                    <!-- Base user radio buttons will be populated here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="updateGroup()">Update Group</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let allDestinations = {{ destinations|tojson|safe }};
+let allEmployees = {{ employees|tojson|safe }};
+let currentEditGroupId = null;
+
+// Initialize search functionality when modal is shown
+document.addEventListener('DOMContentLoaded', function() {
+    // Set up search for destination search
+    const destinationSearch = document.getElementById('destinationSearch');
+    if (destinationSearch) {
+        destinationSearch.addEventListener('input', function() {
+            filterDestinations(this.value);
+        });
+    }
+
+    // Set up search for employee search
+    const employeeSearch = document.getElementById('employeeSearch');
+    if (employeeSearch) {
+        employeeSearch.addEventListener('input', function() {
+            filterEmployees(this.value);
+        });
+    }
+
+    // Set up search for edit modal
+    const editDestinationSearch = document.getElementById('editDestinationSearch');
+    if (editDestinationSearch) {
+        editDestinationSearch.addEventListener('input', function() {
+            filterEditDestinations(this.value);
+        });
+    }
+
+    const editEmployeeSearch = document.getElementById('editEmployeeSearch');
+    if (editEmployeeSearch) {
+        editEmployeeSearch.addEventListener('input', function() {
+            filterEditEmployees(this.value);
+        });
+    }
+
+    // Update counters when checkboxes change
+    document.addEventListener('change', function(e) {
+        if (e.target.classList.contains('destination-checkbox')) {
+            updateDestinationCounter();
+        }
+        if (e.target.classList.contains('employee-checkbox')) {
+            updateEmployeeCounter();
+            updateEmployeeSelection(e.target);
+        }
+    });
+
+    // Initialize counters
+    updateDestinationCounter();
+    updateEmployeeCounter();
+});
+
+function filterDestinations(searchTerm) {
+    const items = document.querySelectorAll('.destination-item');
+    const term = searchTerm.toLowerCase();
+
+    items.forEach(item => {
+        const name = item.dataset.name || '';
+        const country = item.dataset.country || '';
+        const visible = name.includes(term) || country.includes(term);
+        item.style.display = visible ? 'block' : 'none';
+    });
+}
+
+function filterEmployees(searchTerm) {
+    const items = document.querySelectorAll('.employee-item');
+    const term = searchTerm.toLowerCase();
+
+    items.forEach(item => {
+        const name = item.dataset.name || '';
+        const email = item.dataset.email || '';
+        const visible = name.includes(term) || email.includes(term);
+        item.style.display = visible ? 'block' : 'none';
+    });
+}
+
+function filterEditDestinations(searchTerm) {
+    const items = document.querySelectorAll('#editDestinationsList .form-check');
+    const term = searchTerm.toLowerCase();
+
+    items.forEach(item => {
+        const label = item.querySelector('.form-check-label');
+        const text = label ? label.textContent.toLowerCase() : '';
+        const visible = text.includes(term);
+        item.style.display = visible ? 'block' : 'none';
+    });
+}
+
+function filterEditEmployees(searchTerm) {
+    const items = document.querySelectorAll('#editEmployeesList .form-check');
+    const term = searchTerm.toLowerCase();
+
+    items.forEach(item => {
+        const label = item.querySelector('.form-check-label');
+        const text = label ? label.textContent.toLowerCase() : '';
+        const visible = text.includes(term);
+        item.style.display = visible ? 'block' : 'none';
+    });
+}
+
+function updateDestinationCounter() {
+    const selectedCount = document.querySelectorAll('.destination-checkbox:checked').length;
+    const counter = document.getElementById('selectedDestinationsCount');
+    if (counter) {
+        counter.textContent = selectedCount;
+    }
+}
+
+function updateEmployeeCounter() {
+    const selectedCount = document.querySelectorAll('.employee-checkbox:checked').length;
+    const counter = document.getElementById('selectedEmployeesCount');
+    if (counter) {
+        counter.textContent = selectedCount;
+    }
+
+    // Update base user selection
+    const baseUserSelection = document.getElementById('baseUserSelection');
+    if (selectedCount > 0) {
+        const selectedEmployees = Array.from(document.querySelectorAll('.employee-checkbox:checked'));
+        let baseUserHtml = '';
+
+        selectedEmployees.forEach((checkbox, index) => {
+            const empId = checkbox.value;
+            const emp = allEmployees[empId];
+            if (emp) {
+                const checked = index === 0 ? 'checked' : '';
+                baseUserHtml += `
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="baseUser"
+                               value="${empId}" id="base_${empId}" ${checked}>
+                        <label class="form-check-label" for="base_${empId}">
+                            ${emp.username}
+                        </label>
+                    </div>
+                `;
+            }
+        });
+
+        baseUserSelection.innerHTML = baseUserHtml;
+        baseUserSelection.style.display = 'block';
+    } else {
+        baseUserSelection.style.display = 'none';
+    }
+}
+
+function updateEmployeeSelection(checkbox) {
+    const selectedContainer = document.getElementById('selectedEmployeesContainer');
+    const unselectedContainer = document.getElementById('unselectedEmployeesContainer');
+    const empId = checkbox.value;
+    const emp = allEmployees[empId];
+
+    if (!emp) return;
+
+    if (checkbox.checked) {
+        // Move to selected container
+        const selectedItem = document.createElement('div');
+        selectedItem.className = 'form-check employee-item selected-employee';
+        selectedItem.innerHTML = `
+            <input class="form-check-input employee-checkbox" type="checkbox"
+                   value="${empId}" id="selected_emp_${empId}" checked>
+            <label class="form-check-label" for="selected_emp_${empId}">
+                <i class="fas fa-star text-warning me-1"></i>${emp.username} (${emp.email})
+            </label>
+        `;
+
+        // Add event listener to the new checkbox
+        const newCheckbox = selectedItem.querySelector('.employee-checkbox');
+        newCheckbox.addEventListener('change', function() {
+            updateEmployeeSelection(this);
+        });
+
+        selectedContainer.appendChild(selectedItem);
+
+        // Remove from unselected container
+        const unselectedItem = document.querySelector(`#emp_${empId}`).closest('.employee-item');
+        if (unselectedItem) {
+            unselectedItem.remove();
+        }
+    } else {
+        // Move back to unselected container
+        const unselectedItem = document.createElement('div');
+        unselectedItem.className = 'form-check employee-item unselected-employee';
+        unselectedItem.setAttribute('data-name', emp.username.toLowerCase());
+        unselectedItem.setAttribute('data-email', emp.email.toLowerCase());
+        unselectedItem.innerHTML = `
+            <input class="form-check-input employee-checkbox" type="checkbox"
+                   value="${empId}" id="emp_${empId}">
+            <label class="form-check-label" for="emp_${empId}">
+                ${emp.username} (${emp.email})
+            </label>
+        `;
+
+        // Add event listener to the new checkbox
+        const newCheckbox = unselectedItem.querySelector('.employee-checkbox');
+        newCheckbox.addEventListener('change', function() {
+            updateEmployeeSelection(this);
+        });
+
+        unselectedContainer.appendChild(unselectedItem);
+
+        // Remove from selected container
+        const selectedItem = document.querySelector(`#selected_emp_${empId}`).closest('.employee-item');
+        if (selectedItem) {
+            selectedItem.remove();
+        }
+    }
+}
+
+function createGroup() {
+    const groupName = document.getElementById('groupName').value.trim();
+    if (!groupName) {
+        showToast('Group name is required', 'error');
+        return;
+    }
+
+    const selectedDestinations = Array.from(document.querySelectorAll('.destination-checkbox:checked')).map(cb => cb.value);
+    const selectedEmployees = Array.from(document.querySelectorAll('.employee-checkbox:checked')).map(cb => cb.value);
+
+    if (selectedDestinations.length === 0) {
+        showToast('Please select at least one destination', 'error');
+        return;
+    }
+
+    if (selectedEmployees.length === 0) {
+        showToast('Please select at least one employee', 'error');
+        return;
+    }
+
+    fetch('/destination-groups/create', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            name: groupName,
+            destination_ids: selectedDestinations,
+            employee_ids: selectedEmployees
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('Destination group created successfully!', 'success');
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showToast('Error creating group: ' + data.error, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('Error creating destination group', 'error');
+    });
+}
+
+function editGroup(groupId) {
+    currentEditGroupId = groupId;
+
+    fetch('/api/destination-groups')
+    .then(response => response.json())
+    .then(groups => {
+        const group = groups[groupId];
+        if (group) {
+            document.getElementById('editGroupId').value = groupId;
+            document.getElementById('editGroupName').value = group.name;
+
+            // Load destinations
+            let destHtml = '';
+            Object.entries(allDestinations).forEach(([destId, dest]) => {
+                const checked = group.destination_ids.includes(destId) ? 'checked' : '';
+                destHtml += `
+                    <div class="form-check">
+                        <input class="form-check-input edit-destination-checkbox" type="checkbox"
+                               value="${destId}" id="edit_dest_${destId}" ${checked}>
+                        <label class="form-check-label" for="edit_dest_${destId}">
+                            ${dest.name} (${dest.country})
+                        </label>
+                    </div>
+                `;
+            });
+            document.getElementById('editDestinationsList').innerHTML = destHtml;
+
+            // Load employees with proper selection logic
+            loadEditEmployees(group.employee_ids);
+
+            // Initialize edit modal counters and event listeners
+            initializeEditModal();
+
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('editGroupModal'));
+            modal.show();
+        }
+    });
+}
+
+function loadEditEmployees(selectedEmployeeIds) {
+    const selectedContainer = document.getElementById('editSelectedEmployeesContainer');
+    const unselectedContainer = document.getElementById('editUnselectedEmployeesContainer');
+
+    // Clear containers
+    selectedContainer.innerHTML = '';
+    unselectedContainer.innerHTML = '';
+
+    // Load selected employees
+    selectedEmployeeIds.forEach(empId => {
+        if (allEmployees[empId]) {
+            const emp = allEmployees[empId];
+            const selectedItem = document.createElement('div');
+            selectedItem.className = 'form-check employee-item selected-employee';
+            selectedItem.innerHTML = `
+                <input class="form-check-input edit-employee-checkbox" type="checkbox"
+                       value="${empId}" id="edit_selected_emp_${empId}" checked>
+                <label class="form-check-label" for="edit_selected_emp_${empId}">
+                    <i class="fas fa-star text-warning me-1"></i>${emp.username} (${emp.email})
+                </label>
+            `;
+            selectedContainer.appendChild(selectedItem);
+        }
+    });
+
+    // Load unselected employees
+    Object.entries(allEmployees).forEach(([empId, emp]) => {
+        if (!selectedEmployeeIds.includes(empId)) {
+            const unselectedItem = document.createElement('div');
+            unselectedItem.className = 'form-check employee-item unselected-employee';
+            unselectedItem.setAttribute('data-name', emp.username.toLowerCase());
+            unselectedItem.setAttribute('data-email', emp.email.toLowerCase());
+            unselectedItem.innerHTML = `
+                <input class="form-check-input edit-employee-checkbox" type="checkbox"
+                       value="${empId}" id="edit_emp_${empId}">
+                <label class="form-check-label" for="edit_emp_${empId}">
+                    ${emp.username} (${emp.email})
+                </label>
+            `;
+            unselectedContainer.appendChild(unselectedItem);
+        }
+    });
+}
+
+function initializeEditModal() {
+    // Update counters
+    updateEditDestinationCounter();
+    updateEditEmployeeCounter();
+
+    // Add event listeners for edit modal checkboxes
+    document.querySelectorAll('.edit-destination-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            updateEditDestinationCounter();
+        });
+    });
+
+    document.querySelectorAll('.edit-employee-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            updateEditEmployeeCounter();
+            updateEditEmployeeSelection(this);
+        });
+    });
+}
+
+function updateEditDestinationCounter() {
+    const selectedCount = document.querySelectorAll('.edit-destination-checkbox:checked').length;
+    const counter = document.getElementById('editSelectedDestinationsCount');
+    if (counter) {
+        counter.textContent = selectedCount;
+    }
+}
+
+function updateEditEmployeeCounter() {
+    const selectedCount = document.querySelectorAll('.edit-employee-checkbox:checked').length;
+    const counter = document.getElementById('editSelectedEmployeesCount');
+    if (counter) {
+        counter.textContent = selectedCount;
+    }
+
+    // Update base user selection for edit modal
+    const baseUserSelection = document.getElementById('editBaseUserSelection');
+    if (selectedCount > 0) {
+        const selectedEmployees = Array.from(document.querySelectorAll('.edit-employee-checkbox:checked'));
+        let baseUserHtml = '';
+
+        selectedEmployees.forEach((checkbox, index) => {
+            const empId = checkbox.value;
+            const emp = allEmployees[empId];
+            if (emp) {
+                const checked = index === 0 ? 'checked' : '';
+                baseUserHtml += `
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="editBaseUser"
+                               value="${empId}" id="edit_base_${empId}" ${checked}>
+                        <label class="form-check-label" for="edit_base_${empId}">
+                            ${emp.username}
+                        </label>
+                    </div>
+                `;
+            }
+        });
+
+        baseUserSelection.innerHTML = baseUserHtml;
+        baseUserSelection.style.display = 'block';
+    } else {
+        baseUserSelection.style.display = 'none';
+    }
+}
+
+function updateEditEmployeeSelection(checkbox) {
+    const selectedContainer = document.getElementById('editSelectedEmployeesContainer');
+    const unselectedContainer = document.getElementById('editUnselectedEmployeesContainer');
+    const empId = checkbox.value;
+    const emp = allEmployees[empId];
+
+    if (!emp) return;
+
+    if (checkbox.checked) {
+        // Move to selected container
+        const selectedItem = document.createElement('div');
+        selectedItem.className = 'form-check employee-item selected-employee';
+        selectedItem.innerHTML = `
+            <input class="form-check-input edit-employee-checkbox" type="checkbox"
+                   value="${empId}" id="edit_selected_emp_${empId}" checked>
+            <label class="form-check-label" for="edit_selected_emp_${empId}">
+                <i class="fas fa-star text-warning me-1"></i>${emp.username} (${emp.email})
+            </label>
+        `;
+
+        // Add event listener to the new checkbox
+        const newCheckbox = selectedItem.querySelector('.edit-employee-checkbox');
+        newCheckbox.addEventListener('change', function() {
+            updateEditEmployeeSelection(this);
+        });
+
+        selectedContainer.appendChild(selectedItem);
+
+        // Remove from unselected container
+        const unselectedItem = document.querySelector(`#edit_emp_${empId}`).closest('.employee-item');
+        if (unselectedItem) {
+            unselectedItem.remove();
+        }
+    } else {
+        // Move back to unselected container
+        const unselectedItem = document.createElement('div');
+        unselectedItem.className = 'form-check employee-item unselected-employee';
+        unselectedItem.setAttribute('data-name', emp.username.toLowerCase());
+        unselectedItem.setAttribute('data-email', emp.email.toLowerCase());
+        unselectedItem.innerHTML = `
+            <input class="form-check-input edit-employee-checkbox" type="checkbox"
+                   value="${empId}" id="edit_emp_${empId}">
+            <label class="form-check-label" for="edit_emp_${empId}">
+                ${emp.username} (${emp.email})
+            </label>
+        `;
+
+        // Add event listener to the new checkbox
+        const newCheckbox = unselectedItem.querySelector('.edit-employee-checkbox');
+        newCheckbox.addEventListener('change', function() {
+            updateEditEmployeeSelection(this);
+        });
+
+        unselectedContainer.appendChild(unselectedItem);
+
+        // Remove from selected container
+        const selectedItem = document.querySelector(`#edit_selected_emp_${empId}`).closest('.employee-item');
+        if (selectedItem) {
+            selectedItem.remove();
+        }
+    }
+}
+
+function updateGroup() {
+    const groupName = document.getElementById('editGroupName').value.trim();
+    if (!groupName) {
+        showToast('Group name is required', 'error');
+        return;
+    }
+
+    const selectedDestinations = Array.from(document.querySelectorAll('.edit-destination-checkbox:checked')).map(cb => cb.value);
+    const selectedEmployees = Array.from(document.querySelectorAll('.edit-employee-checkbox:checked')).map(cb => cb.value);
+
+    if (selectedDestinations.length === 0) {
+        showToast('Please select at least one destination', 'error');
+        return;
+    }
+
+    if (selectedEmployees.length === 0) {
+        showToast('Please select at least one employee', 'error');
+        return;
+    }
+
+    // Update group name
+    fetch('/destination-groups/update', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            id: currentEditGroupId,
+            field: 'name',
+            value: groupName
+        })
+    });
+
+    // Update destinations
+    fetch('/destination-groups/update', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            id: currentEditGroupId,
+            field: 'destination_ids',
+            value: selectedDestinations
+        })
+    });
+
+    // Update employees
+    fetch('/destination-groups/update', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            id: currentEditGroupId,
+            field: 'employee_ids',
+            value: selectedEmployees
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('Destination group updated successfully!', 'success');
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showToast('Error updating group', 'error');
+        }
+    });
+}
+
+function deleteGroup(groupId) {
+    if (confirm('Are you sure you want to delete this destination group? This action cannot be undone.')) {
+        fetch(`/destination-groups/delete/${groupId}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast('Destination group deleted successfully!', 'success');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showToast('Error deleting group', 'error');
+            }
+        });
+    }
+}
+
+function showToast(message, type) {
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type === 'success' ? 'success' : 'danger'} position-fixed`;
+    toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    toast.innerHTML = `
+        <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'} me-2"></i>
+        ${message}
+        <button type="button" class="btn-close float-end" onclick="this.parentElement.remove()"></button>
+    `;
+
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+        if (toast.parentElement) {
+            toast.remove();
+        }
+    }, 3000);
+}
+</script>
+{% endblock %}

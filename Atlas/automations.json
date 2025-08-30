@@ -1,0 +1,76 @@
+{
+  "1": {
+    "name": "Je reisplan is klaar",
+    "crm_label_id": "c919667d-2ecc-b3c5-aeca-3a0dc5054e8f",
+    "enabled": true,
+    "applicable_destinations": [],
+    "assignment_logic": "base_user",
+    "rule1_type": "contains",
+    "rule1_value": "je reisplan naar",
+    "rule2_type": "contains",
+    "rule2_value": "is klaar",
+    "rule3_type": "ends_with",
+    "rule3_value": "!"
+  },
+  "2": {
+    "name": "Boekingsbevestiging",
+    "crm_label_id": "ec18838b-ee41-8a7f-67f8-3a0dc5057e8d",
+    "enabled": true,
+    "applicable_destinations": [],
+    "assignment_logic": "base_user",
+    "rule1_type": "contains",
+    "rule1_value": "Boekingsbevestiging reis Riksja"
+  },
+  "3": {
+    "name": "Mailverwerker travel hotels",
+    "crm_label_id": "a47c3905-ec7e-5546-affb-3a0f7a57bda9",
+    "enabled": true,
+    "applicable_destinations": [
+      "1"
+    ],
+    "assignment_logic": "base_user",
+    "rule1_type": "contains",
+    "rule1_value": "hotel",
+    "rule2_type": "contains",
+    "rule2_value": "booking"
+  },
+  "4": {
+    "name": "auto reserveren",
+    "crm_label_id": "9d0328af-fe5b-03ec-e402-3a1a9a51701f",
+    "enabled": true,
+    "applicable_destinations": [
+      "1"
+    ],
+    "assignment_logic": "base_user",
+    "rule1_type": "contains",
+    "rule1_value": "Autobedrijf",
+    "rule2_type": "contains",
+    "rule2_value": "reserveren"
+  },
+  "5": {
+    "name": "management changes",
+    "crm_label_id": "1a6a8895-dbc8-0f79-baaa-3a1addb35bca",
+    "enabled": true,
+    "applicable_destinations": [
+      "1"
+    ],
+    "assignment_logic": "base_user",
+    "rule1_type": "contains",
+    "rule1_value": "management",
+    "all": {
+      "name": "management changes",
+      "crm_label_id": "b468eb9a-7f7f-adce-353a-3a14fb0ff514",
+      "enabled": true,
+      "applicable_destinations": [
+        "1"
+      ],
+      "assignment_logic": "base_user",
+      "rule1_type": "contains",
+      "rule1_value": "management",
+      "rule2_type": "contains",
+      "rule2_value": "az",
+      "rule3_type": "ends_with",
+      "rule3_value": "z"
+    }
+  }
+}
